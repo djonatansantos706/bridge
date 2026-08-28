@@ -1,0 +1,8 @@
+{
+  "name": "nb_project_list",
+  "description": "Lista todos os projetos abertos no NetBeans e indica qual é o projeto principal.",
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}

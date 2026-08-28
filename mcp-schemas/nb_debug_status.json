@@ -1,0 +1,8 @@
+{
+  "name": "nb_debug_status",
+  "description": "Verifica se há sessão JPDA ativa no NetBeans, estado da JVM (RUNNING, STOPPED, etc.) e thread atual.",
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}

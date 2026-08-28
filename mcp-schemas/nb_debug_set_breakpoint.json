@@ -1,0 +1,25 @@
+{
+  "name": "nb_debug_set_breakpoint",
+  "description": "Cria um breakpoint no NetBeans JPDA Debugger em um arquivo e linha com condição opcional.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo Java"
+      },
+      "line": {
+        "type": "integer",
+        "description": "Número da linha (1-indexada)"
+      },
+      "condition": {
+        "type": "string",
+        "description": "Condição booleana em Java para disparo do breakpoint (ex: 'id > 10')"
+      }
+    },
+    "required": [
+      "file",
+      "line"
+    ]
+  }
+}

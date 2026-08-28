@@ -1,0 +1,24 @@
+{
+  "name": "nb_project_action",
+  "description": "Dispara uma ação de projeto (build, clean, clean_and_build, run, test, test_single, run_single, debug_single) no NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "description": "Ação a executar: 'build', 'clean', 'clean_and_build', 'run', 'test', 'test_single', 'run_single', 'debug_single'"
+      },
+      "project": {
+        "type": "string",
+        "description": "Caminho do diretório do projeto (opcional, padrão projeto principal ou projeto do arquivo)"
+      },
+      "file": {
+        "type": "string",
+        "description": "Arquivo alvo para ações do tipo test_single ou run_single"
+      }
+    },
+    "required": [
+      "action"
+    ]
+  }
+}

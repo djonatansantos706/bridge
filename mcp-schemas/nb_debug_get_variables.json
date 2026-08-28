@@ -1,0 +1,19 @@
+{
+  "name": "nb_debug_get_variables",
+  "description": "Inspeciona variáveis locais e campos do objeto 'this' no frame da pilha selecionado.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "frame": {
+        "type": "integer",
+        "description": "Índice do frame na pilha (0 = topo da pilha)",
+        "default": 0
+      },
+      "depth": {
+        "type": "integer",
+        "description": "Profundidade de inspeção de campos de objetos (padrão 2)",
+        "default": 2
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# Maven
+target/
+*.class
+
+# NetBeans
+build/
+nbproject/private/
+.nb-gradle/
+
+# IDE & OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.swp
+*.bak
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# Logs
+*.log

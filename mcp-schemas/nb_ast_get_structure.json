@@ -1,0 +1,21 @@
+{
+  "name": "nb_ast_get_structure",
+  "description": "Retorna o outline estruturado da AST (classes, interfaces, métodos, parâmetros, campos, anotações e imports) do arquivo Java.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo Java"
+      },
+      "detail_level": {
+        "type": "integer",
+        "description": "Nível de detalhe (1 = básico, 2 = detalhado)",
+        "default": 1
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

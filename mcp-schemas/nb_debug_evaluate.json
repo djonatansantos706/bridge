@@ -1,0 +1,20 @@
+{
+  "name": "nb_debug_evaluate",
+  "description": "Avalia uma expressão Java em tempo real no contexto da sessão de depuração suspensa.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "expression": {
+        "type": "string",
+        "description": "Expressão Java a ser avaliada (ex: 'usuario.getNome()')"
+      },
+      "frame": {
+        "type": "integer",
+        "description": "Índice do frame da pilha de chamadas (opcional, padrão 0)"
+      }
+    },
+    "required": [
+      "expression"
+    ]
+  }
+}

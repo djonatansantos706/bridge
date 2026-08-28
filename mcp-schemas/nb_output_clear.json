@@ -1,0 +1,16 @@
+{
+  "name": "nb_output_clear",
+  "description": "Limpa as linhas de uma aba de saída no NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "tab": {
+        "type": "string",
+        "description": "Nome da aba de saída a ser limpa"
+      }
+    },
+    "required": [
+      "tab"
+    ]
+  }
+}

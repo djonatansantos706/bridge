@@ -1,0 +1,16 @@
+{
+  "name": "nb_diagnostics_get",
+  "description": "Obtém instantaneamente erros e warnings de compilação de um arquivo Java a partir da AST do NetBeans sem build em disco.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo Java"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

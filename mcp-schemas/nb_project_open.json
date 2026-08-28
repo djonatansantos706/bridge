@@ -1,0 +1,16 @@
+{
+  "name": "nb_project_open",
+  "description": "Abre um diretório como projeto no NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "path": {
+        "type": "string",
+        "description": "Caminho absoluto do diretório do projeto"
+      }
+    },
+    "required": [
+      "path"
+    ]
+  }
+}

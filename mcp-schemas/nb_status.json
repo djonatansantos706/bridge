@@ -1,0 +1,8 @@
+{
+  "name": "nb_status",
+  "description": "Verifica se a Antigravity Bridge Suite está ativa no NetBeans e respondendo.",
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "nb_open_file",
+  "description": "Abre um arquivo no editor do NetBeans em uma linha específica.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo a ser aberto"
+      },
+      "line": {
+        "type": "integer",
+        "description": "Número da linha (opcional, padrão 1)"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "nb_get_buffer",
+  "description": "Lê o conteúdo atual em memória (buffer) de um arquivo aberto no NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

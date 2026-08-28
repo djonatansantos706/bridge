@@ -1,0 +1,21 @@
+{
+  "name": "nb_debug_remove_breakpoint",
+  "description": "Remove um breakpoint por ID hexadecimal ou por arquivo e linha.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "ID do breakpoint (opcional se informado file e line)"
+      },
+      "file": {
+        "type": "string",
+        "description": "Caminho do arquivo Java"
+      },
+      "line": {
+        "type": "integer",
+        "description": "Número da linha"
+      }
+    }
+  }
+}

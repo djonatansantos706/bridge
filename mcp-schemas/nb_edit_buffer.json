@@ -1,0 +1,30 @@
+{
+  "name": "nb_edit_buffer",
+  "description": "Edita um arquivo diretamente no buffer do NetBeans sem salvar no disco (marca com * não salvo, preserva histórico local e encoding do projeto).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo"
+      },
+      "old_text": {
+        "type": "string",
+        "description": "Texto exato a ser substituído"
+      },
+      "new_text": {
+        "type": "string",
+        "description": "Novo texto substituto"
+      },
+      "allow_multiple": {
+        "type": "boolean",
+        "description": "Se true, substitui todas as ocorrências (padrão false)"
+      }
+    },
+    "required": [
+      "file",
+      "old_text",
+      "new_text"
+    ]
+  }
+}
