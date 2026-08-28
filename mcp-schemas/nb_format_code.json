@@ -1,0 +1,24 @@
+{
+  "name": "nb_format_code",
+  "description": "Formata e reindenta o arquivo ou trecho de linhas no padrão de código nativo do NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo"
+      },
+      "start_line": {
+        "type": "integer",
+        "description": "Linha inicial (opcional, padrão formata arquivo inteiro)"
+      },
+      "end_line": {
+        "type": "integer",
+        "description": "Linha final (opcional)"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

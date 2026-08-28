@@ -1,16 +1,16 @@
 {
   "name": "nb_invoke_action",
-  "description": "Executa uma ação global registrada no NetBeans a partir do seu ID de ação (Actions.forID).",
+  "description": "Invoca qualquer ação nativa ou global registrada no NetBeans a partir do Action ID (ex: 'org-netbeans-core-actions-SaveAllAction').",
   "parameters": {
     "type": "object",
     "properties": {
       "action_id": {
         "type": "string",
-        "description": "Identificador da ação (ex: 'org.netbeans.modules.project.ui.actions.OpenProject')"
+        "description": "ID da ação registrado no NetBeans"
       },
       "category": {
         "type": "string",
-        "description": "Categoria da ação (ex: 'File', 'Edit', 'Project', etc., opcional)"
+        "description": "Categoria da ação (opcional)"
       }
     },
     "required": [

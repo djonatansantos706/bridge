@@ -1,20 +1,20 @@
 {
   "name": "nb_debug_remove_breakpoint",
-  "description": "Remove um breakpoint por ID hexadecimal ou por arquivo e linha.",
+  "description": "Remove um breakpoint no NetBeans por ID ou por arquivo e linha.",
   "parameters": {
     "type": "object",
     "properties": {
       "id": {
         "type": "string",
-        "description": "ID do breakpoint (opcional se informado file e line)"
+        "description": "ID do breakpoint a remover"
       },
       "file": {
         "type": "string",
-        "description": "Caminho do arquivo Java"
+        "description": "Caminho absoluto do arquivo (se não informar ID)"
       },
       "line": {
         "type": "integer",
-        "description": "Número da linha"
+        "description": "Número da linha (se não informar ID)"
       }
     }
   }

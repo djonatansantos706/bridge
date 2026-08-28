@@ -62,9 +62,39 @@ def set_full_buffer(file_path, content):
         "content": content
     })
 
+def format_code(file_path, start_line=None, end_line=None):
+    payload = {"file": file_path}
+    if start_line is not None:
+        payload["start_line"] = start_line
+    if end_line is not None:
+        payload["end_line"] = end_line
+    return send_request("/format", payload)
+
+def get_selection(file_path):
+    return send_request("/selection/get", {"file": file_path})
+
+def set_selection(file_path, start_line, start_col=1, end_line=None, end_col=None):
+    return send_request("/selection/set", {
+        "file": file_path,
+        "start_line": start_line,
+        "start_column": start_col,
+        "end_line": end_line if end_line is not None else start_line,
+        "end_column": end_col if end_col is not None else start_col
+    })
+
+def goto_definition(file_path, line=0, column=0, symbol=None):
+    payload = {"file": file_path}
+    if line: payload["line"] = line
+    if column: payload["column"] = column
+    if symbol: payload["symbol"] = symbol
+    return send_request("/definition", payload)
+
+def find_usages(file_path, symbol):
+    return send_request("/usages", {"file": file_path, "symbol": symbol})
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python3 agy_nb_client.py [status|open|get|edit] [argumentos...]")
+        print("Uso: python3 agy_nb_client.py [status|open|get|edit|format|selection|definition|usages] [argumentos...]")
         sys.exit(1)
         
     cmd = sys.argv[1]
@@ -75,5 +105,16 @@ if __name__ == "__main__":
         print(json.dumps(open_file(sys.argv[2], line), indent=2, ensure_ascii=False))
     elif cmd == "get" and len(sys.argv) >= 3:
         print(json.dumps(get_buffer(sys.argv[2]), indent=2, ensure_ascii=False))
+    elif cmd == "format" and len(sys.argv) >= 3:
+        start_line = int(sys.argv[3]) if len(sys.argv) > 3 else None
+        end_line = int(sys.argv[4]) if len(sys.argv) > 4 else None
+        print(json.dumps(format_code(sys.argv[2], start_line, end_line), indent=2, ensure_ascii=False))
+    elif cmd == "selection" and len(sys.argv) >= 3:
+        print(json.dumps(get_selection(sys.argv[2]), indent=2, ensure_ascii=False))
+    elif cmd == "definition" and len(sys.argv) >= 3:
+        sym = sys.argv[3] if len(sys.argv) > 3 else None
+        print(json.dumps(goto_definition(sys.argv[2], symbol=sym), indent=2, ensure_ascii=False))
+    elif cmd == "usages" and len(sys.argv) >= 4:
+        print(json.dumps(find_usages(sys.argv[2], sys.argv[3]), indent=2, ensure_ascii=False))
     else:
         print("Comando não reconhecido ou parâmetros insuficientes.")

@@ -1,0 +1,16 @@
+{
+  "name": "nb_debug_remove_watch",
+  "description": "Remove uma expressão monitorada da aba Watches por ID, expressão ou 'all'.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "ID ou expressão da watch a remover ('all' para todas)"
+      }
+    },
+    "required": [
+      "id"
+    ]
+  }
+}

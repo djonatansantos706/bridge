@@ -14,10 +14,15 @@ import org.netbeans.api.debugger.ActionsManager;
 import org.netbeans.api.debugger.Breakpoint;
 import org.netbeans.api.debugger.DebuggerEngine;
 import org.netbeans.api.debugger.DebuggerManager;
+import org.netbeans.api.debugger.DebuggerManagerAdapter;
 import org.netbeans.api.debugger.Session;
+import org.netbeans.api.debugger.Watch;
 import org.netbeans.api.debugger.jpda.CallStackFrame;
+import org.netbeans.api.debugger.jpda.ExceptionBreakpoint;
 import org.netbeans.api.debugger.jpda.Field;
+import org.netbeans.api.debugger.jpda.JPDAArrayType;
 import org.netbeans.api.debugger.jpda.JPDABreakpoint;
+import org.netbeans.api.debugger.jpda.JPDAClassType;
 import org.netbeans.api.debugger.jpda.JPDADebugger;
 import org.netbeans.api.debugger.jpda.JPDAThread;
 import org.netbeans.api.debugger.jpda.LineBreakpoint;
@@ -26,6 +31,8 @@ import org.netbeans.api.debugger.jpda.ObjectVariable;
 import org.netbeans.api.debugger.jpda.This;
 import org.netbeans.api.debugger.jpda.ThreadsCollector;
 import org.netbeans.api.debugger.jpda.Variable;
+import org.netbeans.api.debugger.jpda.event.JPDABreakpointEvent;
+import org.netbeans.api.debugger.jpda.event.JPDABreakpointListener;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 
@@ -34,11 +41,121 @@ public class NbDebugService {
     private static final Logger LOG = Logger.getLogger(NbDebugService.class.getName());
     private static final NbDebugService INSTANCE = new NbDebugService();
 
+    private volatile Map<String, Object> lastException = null;
+
     public static NbDebugService getInstance() {
         return INSTANCE;
     }
 
     private NbDebugService() {
+        initDebuggerListeners();
+    }
+
+    private void initDebuggerListeners() {
+        try {
+            DebuggerManager.getDebuggerManager().addDebuggerListener(new DebuggerManagerAdapter() {
+                @Override
+                public void breakpointAdded(Breakpoint bp) {
+                    attachBreakpointListener(bp);
+                }
+            });
+            for (Breakpoint bp : DebuggerManager.getDebuggerManager().getBreakpoints()) {
+                attachBreakpointListener(bp);
+            }
+        } catch (Exception ex) {
+            LOG.log(Level.WARNING, "Falha ao registrar listeners de depuração", ex);
+        }
+    }
+
+    private void attachBreakpointListener(Breakpoint bp) {
+        if (bp instanceof JPDABreakpoint) {
+            ((JPDABreakpoint) bp).addJPDABreakpointListener(new JPDABreakpointListener() {
+                @Override
+                public void breakpointReached(JPDABreakpointEvent event) {
+                    handleBreakpointReached(event);
+                }
+            });
+        }
+    }
+
+    private void handleBreakpointReached(JPDABreakpointEvent event) {
+        try {
+            JPDABreakpoint bp = (JPDABreakpoint) event.getSource();
+            boolean isExceptionBp = (bp instanceof ExceptionBreakpoint);
+            Variable var = event.getVariable();
+            if (isExceptionBp || var != null) {
+                recordException(var, event.getThread(), isExceptionBp ? ((ExceptionBreakpoint) bp).getExceptionClassName() : null);
+            }
+        } catch (Exception ex) {
+            LOG.log(Level.FINE, "Erro ao registrar exceção no breakpoint listener", ex);
+        }
+    }
+
+    public void recordException(Variable var, JPDAThread thread, String hintClassName) {
+        Map<String, Object> exMap = new HashMap<>();
+        exMap.put("hasException", true);
+        exMap.put("timestamp", System.currentTimeMillis());
+
+        String exClass = hintClassName;
+        String message = null;
+        String toStringVal = null;
+
+        if (var != null) {
+            if (exClass == null || exClass.isEmpty()) {
+                exClass = var.getType();
+            }
+            message = var.getValue();
+            if (var instanceof ObjectVariable) {
+                ObjectVariable ov = (ObjectVariable) var;
+                try {
+                    toStringVal = ov.getToStringValue();
+                } catch (Exception ignored) {
+                }
+                try {
+                    Field msgField = ov.getField("detailMessage");
+                    if (msgField != null && msgField.getValue() != null) {
+                        message = msgField.getValue();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        exMap.put("exceptionClass", exClass != null ? exClass : "java.lang.Throwable");
+        exMap.put("message", message != null ? message : (toStringVal != null ? toStringVal : ""));
+        if (toStringVal != null) {
+            exMap.put("toString", toStringVal);
+        }
+
+        if (thread != null) {
+            exMap.put("threadName", thread.getName());
+            List<Map<String, Object>> stackList = new ArrayList<>();
+            try {
+                CallStackFrame[] frames = thread.getCallStack();
+                int idx = 0;
+                for (CallStackFrame f : frames) {
+                    Map<String, Object> fm = new HashMap<>();
+                    fm.put("index", idx++);
+                    fm.put("className", f.getClassName());
+                    fm.put("methodName", f.getMethodName());
+                    try {
+                        fm.put("sourceName", f.getSourceName(null));
+                    } catch (Exception ignored) {
+                    }
+                    try {
+                        fm.put("sourcePath", f.getSourcePath(null));
+                    } catch (Exception ignored) {
+                    }
+                    fm.put("lineNumber", f.getLineNumber(null));
+                    stackList.add(fm);
+                }
+            } catch (Exception ex) {
+                exMap.put("stackError", ex.getMessage());
+            }
+            exMap.put("stackTrace", stackList);
+        }
+
+        this.lastException = exMap;
     }
 
     public JPDADebugger getCurrentDebugger() {
@@ -70,6 +187,7 @@ public class NbDebugService {
         if (!active) {
             map.put("state", "INACTIVE");
             map.put("breakpointsCount", DebuggerManager.getDebuggerManager().getBreakpoints().length);
+            map.put("watchesCount", DebuggerManager.getDebuggerManager().getWatches().length);
             return map;
         }
 
@@ -101,6 +219,7 @@ public class NbDebugService {
         }
 
         map.put("breakpointsCount", DebuggerManager.getDebuggerManager().getBreakpoints().length);
+        map.put("watchesCount", DebuggerManager.getDebuggerManager().getWatches().length);
         return map;
     }
 
@@ -393,26 +512,197 @@ public class NbDebugService {
             vm.put("type", type != null ? type : "unknown");
             vm.put("value", value != null ? value : "null");
 
-            if (currentDepth < maxDepth && (v instanceof ObjectVariable)) {
+            if (v instanceof ObjectVariable) {
                 ObjectVariable ov = (ObjectVariable) v;
-                if (!visited.add(ov)) {
-                    vm.put("circularReference", true);
-                    return vm;
-                }
-
-                List<Map<String, Object>> fieldsList = new ArrayList<>();
                 try {
-                    Field[] fields = ov.getFields(0, 50);
-                    if (fields != null) {
-                        for (Field f : fields) {
-                            fieldsList.add(serializeVariable(f.getName(), f, currentDepth + 1, maxDepth, visited));
-                        }
+                    String strVal = ov.getToStringValue();
+                    if (strVal != null && !strVal.equals(value)) {
+                        vm.put("toString", strVal);
                     }
                 } catch (Exception ignored) {
                 }
 
-                if (!fieldsList.isEmpty()) {
-                    vm.put("fields", fieldsList);
+                if (currentDepth < maxDepth) {
+                    if (!visited.add(ov)) {
+                        vm.put("circularReference", true);
+                        return vm;
+                    }
+
+                    boolean isArray = (type != null && type.endsWith("[]"));
+                    JPDAClassType classType = null;
+                    try {
+                        classType = ov.getClassType();
+                    } catch (Exception ignored) {
+                    }
+
+                    // 1. Formatação de Arrays
+                    if (isArray) {
+                        vm.put("collectionType", "ARRAY");
+                        int count = ov.getFieldsCount();
+                        vm.put("length", count);
+                        List<Map<String, Object>> itemsList = new ArrayList<>();
+                        try {
+                            Field[] fields = ov.getFields(0, Math.min(count, 50));
+                            if (fields != null) {
+                                for (int i = 0; i < fields.length; i++) {
+                                    itemsList.add(serializeVariable("[" + i + "]", fields[i], currentDepth + 1, maxDepth, visited));
+                                }
+                            }
+                        } catch (Exception ex) {
+                            vm.put("itemError", ex.getMessage());
+                        }
+                        vm.put("items", itemsList);
+                        return vm;
+                    }
+
+                    // 2. Formatação de Listas e Coleções (java.util.List, java.util.Set, java.util.Collection)
+                    boolean isList = false;
+                    boolean isSet = false;
+                    boolean isCollection = false;
+                    if (classType != null) {
+                        try {
+                            isList = classType.isInstanceOf("java.util.List");
+                            isSet = !isList && classType.isInstanceOf("java.util.Set");
+                            isCollection = isList || isSet || classType.isInstanceOf("java.util.Collection");
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    if (!isCollection && type != null) {
+                        if (type.contains("List")) {
+                            isList = true;
+                            isCollection = true;
+                        } else if (type.contains("Set")) {
+                            isSet = true;
+                            isCollection = true;
+                        }
+                    }
+
+                    if (isCollection) {
+                        vm.put("collectionType", isList ? "LIST" : (isSet ? "SET" : "COLLECTION"));
+                        boolean handled = false;
+                        try {
+                            Variable sizeVar = ov.invokeMethod("size", "()I", new Variable[0]);
+                            int size = 0;
+                            if (sizeVar != null && sizeVar.getValue() != null) {
+                                try {
+                                    size = Integer.parseInt(sizeVar.getValue());
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                            vm.put("size", size);
+
+                            Variable arrayVar = ov.invokeMethod("toArray", "()[Ljava/lang/Object;", new Variable[0]);
+                            if (arrayVar instanceof ObjectVariable) {
+                                ObjectVariable arrOv = (ObjectVariable) arrayVar;
+                                int arrLen = arrOv.getFieldsCount();
+                                int fetchLimit = Math.min(arrLen, Math.min(size > 0 ? size : 50, 50));
+                                Field[] items = arrOv.getFields(0, fetchLimit);
+                                List<Map<String, Object>> itemsList = new ArrayList<>();
+                                if (items != null) {
+                                    for (int i = 0; i < items.length; i++) {
+                                        itemsList.add(serializeVariable("[" + i + "]", items[i], currentDepth + 1, maxDepth, visited));
+                                    }
+                                }
+                                vm.put("items", itemsList);
+                                handled = true;
+                            }
+                        } catch (Exception ex) {
+                            LOG.log(Level.FINE, "Falha ao invocar toArray na coleção", ex);
+                        }
+
+                        if (handled) {
+                            return vm;
+                        }
+                    }
+
+                    // 3. Formatação de Mapas (java.util.Map)
+                    boolean isMap = false;
+                    if (classType != null) {
+                        try {
+                            isMap = classType.isInstanceOf("java.util.Map");
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    if (!isMap && type != null && type.contains("Map")) {
+                        isMap = true;
+                    }
+
+                    if (isMap) {
+                        vm.put("collectionType", "MAP");
+                        boolean handled = false;
+                        try {
+                            Variable sizeVar = ov.invokeMethod("size", "()I", new Variable[0]);
+                            int size = 0;
+                            if (sizeVar != null && sizeVar.getValue() != null) {
+                                try {
+                                    size = Integer.parseInt(sizeVar.getValue());
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                            vm.put("size", size);
+
+                            Variable entrySetVar = ov.invokeMethod("entrySet", "()Ljava/util/Set;", new Variable[0]);
+                            if (entrySetVar instanceof ObjectVariable) {
+                                Variable arrayVar = ((ObjectVariable) entrySetVar).invokeMethod("toArray", "()[Ljava/lang/Object;", new Variable[0]);
+                                if (arrayVar instanceof ObjectVariable) {
+                                    ObjectVariable arrOv = (ObjectVariable) arrayVar;
+                                    int arrLen = arrOv.getFieldsCount();
+                                    int fetchLimit = Math.min(arrLen, Math.min(size > 0 ? size : 50, 50));
+                                    Field[] entries = arrOv.getFields(0, fetchLimit);
+                                    List<Map<String, Object>> entriesList = new ArrayList<>();
+                                    if (entries != null) {
+                                        for (int i = 0; i < entries.length; i++) {
+                                            Field entryField = entries[i];
+                                            Map<String, Object> entryMap = new HashMap<>();
+                                            entryMap.put("index", i);
+                                            if (entryField instanceof ObjectVariable) {
+                                                ObjectVariable entryOv = (ObjectVariable) entryField;
+                                                try {
+                                                    Variable keyVar = entryOv.invokeMethod("getKey", "()Ljava/lang/Object;", new Variable[0]);
+                                                    entryMap.put("key", serializeVariable("key", keyVar, currentDepth + 1, maxDepth, visited));
+                                                } catch (Exception e) {
+                                                    entryMap.put("key", entryOv.getValue());
+                                                }
+                                                try {
+                                                    Variable valVar = entryOv.invokeMethod("getValue", "()Ljava/lang/Object;", new Variable[0]);
+                                                    entryMap.put("value", serializeVariable("value", valVar, currentDepth + 1, maxDepth, visited));
+                                                } catch (Exception e) {
+                                                    entryMap.put("value", entryOv.getValue());
+                                                }
+                                            } else {
+                                                entryMap.put("entry", serializeVariable("[" + i + "]", entryField, currentDepth + 1, maxDepth, visited));
+                                            }
+                                            entriesList.add(entryMap);
+                                        }
+                                    }
+                                    vm.put("entries", entriesList);
+                                    handled = true;
+                                }
+                            }
+                        } catch (Exception ex) {
+                            LOG.log(Level.FINE, "Falha ao formatar mapa", ex);
+                        }
+
+                        if (handled) {
+                            return vm;
+                        }
+                    }
+
+                    // 4. Objetos padrão: campos de instância
+                    List<Map<String, Object>> fieldsList = new ArrayList<>();
+                    try {
+                        Field[] fields = ov.getFields(0, 50);
+                        if (fields != null) {
+                            for (Field f : fields) {
+                                fieldsList.add(serializeVariable(f.getName(), f, currentDepth + 1, maxDepth, visited));
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+
+                    if (!fieldsList.isEmpty()) {
+                        vm.put("fields", fieldsList);
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -460,6 +750,189 @@ public class NbDebugService {
             res.put("value", "null");
         }
 
+        return res;
+    }
+
+    // --- Gerenciamento de Watches (TASK-09) ---
+
+    public Map<String, Object> addWatch(String expression) throws Exception {
+        if (expression == null || expression.trim().isEmpty()) {
+            throw new IllegalArgumentException("Expressão da watch não pode ser vazia.");
+        }
+        String expr = expression.trim();
+        Watch watch = DebuggerManager.getDebuggerManager().createWatch(expr);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("ok", true);
+        res.put("id", Integer.toHexString(watch.hashCode()));
+        res.put("expression", watch.getExpression());
+        res.put("enabled", watch.isEnabled());
+
+        JPDADebugger debugger = getCurrentDebugger();
+        if (debugger != null && debugger.getState() == JPDADebugger.STATE_STOPPED) {
+            try {
+                Variable v = debugger.evaluate(expr);
+                if (v != null) {
+                    res.put("type", v.getType());
+                    res.put("value", v.getValue());
+                    if (v instanceof ObjectVariable) {
+                        try {
+                            res.put("toString", ((ObjectVariable) v).getToStringValue());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                } else {
+                    res.put("type", "void");
+                    res.put("value", "null");
+                }
+            } catch (Exception ex) {
+                res.put("type", "error");
+                res.put("value", ex.getMessage());
+                res.put("error", ex.getMessage());
+            }
+        }
+        return res;
+    }
+
+    public List<Map<String, Object>> listWatches() {
+        Watch[] watches = DebuggerManager.getDebuggerManager().getWatches();
+        List<Map<String, Object>> list = new ArrayList<>();
+        JPDADebugger debugger = getCurrentDebugger();
+        boolean canEvaluate = (debugger != null && debugger.getState() == JPDADebugger.STATE_STOPPED);
+
+        for (Watch w : watches) {
+            Map<String, Object> m = new HashMap<>();
+            String id = Integer.toHexString(w.hashCode());
+            String expr = w.getExpression();
+            m.put("id", id);
+            m.put("expression", expr);
+            m.put("enabled", w.isEnabled());
+
+            if (canEvaluate && expr != null && !expr.trim().isEmpty()) {
+                try {
+                    Variable v = debugger.evaluate(expr);
+                    if (v != null) {
+                        m.put("type", v.getType());
+                        m.put("value", v.getValue());
+                        if (v instanceof ObjectVariable) {
+                            try {
+                                m.put("toString", ((ObjectVariable) v).getToStringValue());
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    } else {
+                        m.put("type", "void");
+                        m.put("value", "null");
+                    }
+                } catch (Exception ex) {
+                    m.put("type", "error");
+                    m.put("value", ex.getMessage());
+                    m.put("error", ex.getMessage());
+                }
+            } else {
+                if (debugger == null) {
+                    m.put("type", "N/A");
+                    m.put("value", "Debugger inativo");
+                } else if (debugger.getState() != JPDADebugger.STATE_STOPPED) {
+                    m.put("type", "N/A");
+                    m.put("value", "Debugger em execução (não suspenso)");
+                } else {
+                    m.put("type", "N/A");
+                    m.put("value", "Não avaliado");
+                }
+            }
+            list.add(m);
+        }
+        return list;
+    }
+
+    public Map<String, Object> removeWatch(String expressionOrId) throws Exception {
+        if (expressionOrId == null || expressionOrId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Identificador ou expressão da watch é obrigatório.");
+        }
+        String target = expressionOrId.trim();
+        Watch[] watches = DebuggerManager.getDebuggerManager().getWatches();
+        List<Watch> toRemove = new ArrayList<>();
+
+        for (Watch w : watches) {
+            String id = Integer.toHexString(w.hashCode());
+            if (target.equalsIgnoreCase(id) || target.equals(w.getExpression()) || target.equalsIgnoreCase("all")) {
+                toRemove.add(w);
+            }
+        }
+
+        if (toRemove.isEmpty()) {
+            Map<String, Object> res = new HashMap<>();
+            res.put("ok", false);
+            res.put("error", "Nenhuma watch correspondente encontrada para: " + expressionOrId);
+            return res;
+        }
+
+        for (Watch w : toRemove) {
+            w.remove();
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("ok", true);
+        res.put("removedCount", toRemove.size());
+        res.put("message", toRemove.size() + " watch(es) removida(s).");
+        return res;
+    }
+
+    // --- Captura de Exceção JPDA (TASK-10) ---
+
+    public Map<String, Object> getLastException() {
+        if (lastException != null) {
+            Map<String, Object> res = new HashMap<>(lastException);
+            res.put("ok", true);
+            return res;
+        }
+
+        JPDADebugger debugger = getCurrentDebugger();
+        if (debugger != null) {
+            JPDAThread thread = debugger.getCurrentThread();
+            if (thread != null && thread.isSuspended()) {
+                JPDABreakpoint bp = thread.getCurrentBreakpoint();
+                if (bp instanceof ExceptionBreakpoint) {
+                    ExceptionBreakpoint ebp = (ExceptionBreakpoint) bp;
+                    Map<String, Object> res = new HashMap<>();
+                    res.put("ok", true);
+                    res.put("hasException", true);
+                    res.put("exceptionClass", ebp.getExceptionClassName());
+                    res.put("threadName", thread.getName());
+                    res.put("message", "Interrompido por ExceptionBreakpoint: " + ebp.getExceptionClassName());
+                    List<Map<String, Object>> stackList = new ArrayList<>();
+                    try {
+                        CallStackFrame[] frames = thread.getCallStack();
+                        int idx = 0;
+                        for (CallStackFrame f : frames) {
+                            Map<String, Object> fm = new HashMap<>();
+                            fm.put("index", idx++);
+                            fm.put("className", f.getClassName());
+                            fm.put("methodName", f.getMethodName());
+                            try {
+                                fm.put("sourceName", f.getSourceName(null));
+                            } catch (Exception ignored) {
+                            }
+                            try {
+                                fm.put("sourcePath", f.getSourcePath(null));
+                            } catch (Exception ignored) {
+                            }
+                            fm.put("lineNumber", f.getLineNumber(null));
+                            stackList.add(fm);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    res.put("stackTrace", stackList);
+                    return res;
+                }
+            }
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("ok", true);
+        res.put("hasException", false);
+        res.put("message", "Nenhuma exceção capturada recentemente.");
         return res;
     }
 }

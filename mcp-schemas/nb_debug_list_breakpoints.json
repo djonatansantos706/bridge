@@ -1,6 +1,6 @@
 {
   "name": "nb_debug_list_breakpoints",
-  "description": "Lista todos os breakpoints cadastrados no NetBeans com ID, tipo, arquivo, linha e condições.",
+  "description": "Lista todos os breakpoints ativos na IDE NetBeans.",
   "parameters": {
     "type": "object",
     "properties": {}

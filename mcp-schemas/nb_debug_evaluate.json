@@ -1,16 +1,16 @@
 {
   "name": "nb_debug_evaluate",
-  "description": "Avalia uma expressão Java em tempo real no contexto da sessão de depuração suspensa.",
+  "description": "Avalia uma expressão Java em tempo de execução no contexto da JVM pausada no debugger.",
   "parameters": {
     "type": "object",
     "properties": {
       "expression": {
         "type": "string",
-        "description": "Expressão Java a ser avaliada (ex: 'usuario.getNome()')"
+        "description": "Expressão Java a ser avaliada"
       },
       "frame": {
         "type": "integer",
-        "description": "Índice do frame da pilha de chamadas (opcional, padrão 0)"
+        "description": "Índice do frame na pilha (opcional)"
       }
     },
     "required": [

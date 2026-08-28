@@ -1,6 +1,6 @@
 {
   "name": "nb_open_commit",
-  "description": "Abre a tela nativa de commit do NetBeans (Subversion ou Git) com os arquivos especificados selecionados e mensagem pré-preenchida.",
+  "description": "Abre o diálogo nativo de commit do NetBeans (Git ou Subversion) com arquivos pré-selecionados.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -9,11 +9,11 @@
         "items": {
           "type": "string"
         },
-        "description": "Lista de caminhos absolutos dos arquivos ou diretórios para commit"
+        "description": "Lista de caminhos absolutos dos arquivos a incluir no commit"
       },
       "message": {
         "type": "string",
-        "description": "Mensagem descritiva de commit"
+        "description": "Mensagem prévia de commit (opcional)"
       }
     },
     "required": [

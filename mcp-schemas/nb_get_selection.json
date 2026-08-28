@@ -1,0 +1,16 @@
+{
+  "name": "nb_get_selection",
+  "description": "Obtém a posição do cursor (linha, coluna) e o texto atualmente selecionado no editor do NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo aberto no editor"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

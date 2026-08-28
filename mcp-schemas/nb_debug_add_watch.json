@@ -1,0 +1,16 @@
+{
+  "name": "nb_debug_add_watch",
+  "description": "Adiciona uma expressão monitorada na aba Watches do NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "expression": {
+        "type": "string",
+        "description": "Expressão Java a ser monitorada"
+      }
+    },
+    "required": [
+      "expression"
+    ]
+  }
+}

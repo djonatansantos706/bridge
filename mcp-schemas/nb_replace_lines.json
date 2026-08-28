@@ -1,6 +1,6 @@
 {
   "name": "nb_replace_lines",
-  "description": "Substitui um trecho dentro de um intervalo de linhas no buffer do NetBeans.",
+  "description": "Substitui um trecho de código em um intervalo de linhas no buffer do NetBeans.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -18,11 +18,11 @@
       },
       "target_content": {
         "type": "string",
-        "description": "Conteúdo alvo a ser substituído"
+        "description": "Texto exato existente a ser substituído"
       },
       "replacement_content": {
         "type": "string",
-        "description": "Conteúdo substituto"
+        "description": "Conteúdo de substituição"
       }
     },
     "required": [

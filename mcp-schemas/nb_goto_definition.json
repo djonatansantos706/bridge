@@ -1,0 +1,29 @@
+{
+  "name": "nb_goto_definition",
+  "description": "Navega semanticamente para a definição de uma classe, método ou símbolo a partir do arquivo e linha.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo Java"
+      },
+      "line": {
+        "type": "integer",
+        "description": "Linha do símbolo no editor"
+      },
+      "column": {
+        "type": "integer",
+        "description": "Coluna do símbolo no editor (opcional, padrão 1)"
+      },
+      "symbol": {
+        "type": "string",
+        "description": "Nome do símbolo (opcional)"
+      }
+    },
+    "required": [
+      "file",
+      "line"
+    ]
+  }
+}

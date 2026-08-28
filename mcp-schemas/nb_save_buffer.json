@@ -1,0 +1,16 @@
+{
+  "name": "nb_save_buffer",
+  "description": "Persiste as alterações do buffer de um arquivo no disco (salva o documento no NetBeans).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

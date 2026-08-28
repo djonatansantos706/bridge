@@ -1,0 +1,8 @@
+{
+  "name": "nb_debug_list_watches",
+  "description": "Lista todas as expressões monitoradas na aba Watches com valores e tipos avaliados.",
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}

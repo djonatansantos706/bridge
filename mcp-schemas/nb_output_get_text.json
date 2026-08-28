@@ -1,12 +1,12 @@
 {
   "name": "nb_output_get_text",
-  "description": "Lê linhas de log de uma aba de saída do NetBeans com suporte a paginação incremental.",
+  "description": "Lê linhas de uma aba de saída do NetBeans com suporte a filtros Regex ou texto.",
   "parameters": {
     "type": "object",
     "properties": {
       "tab": {
         "type": "string",
-        "description": "Nome da aba de saída (opcional, lê aba principal se omitido)"
+        "description": "Nome da aba de saída (opcional, padrão aba ativa)"
       },
       "since_line": {
         "type": "integer",
@@ -17,6 +17,14 @@
         "type": "integer",
         "description": "Quantidade máxima de linhas a retornar (padrão 500)",
         "default": 500
+      },
+      "filter": {
+        "type": "string",
+        "description": "Expressão regular ou texto para filtrar linhas relevantes (ex: 'ERROR|Exception')"
+      },
+      "case_sensitive": {
+        "type": "boolean",
+        "description": "Diferenciar maiúsculas/minúsculas no filtro (padrão false)"
       }
     }
   }

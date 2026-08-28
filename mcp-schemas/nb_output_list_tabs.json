@@ -1,6 +1,6 @@
 {
   "name": "nb_output_list_tabs",
-  "description": "Lista todas as abas ativas na janela de saída (Output Window) do NetBeans.",
+  "description": "Lista todas as abas abertas no console de saída do NetBeans (Run, Debug, Maven, etc.).",
   "parameters": {
     "type": "object",
     "properties": {}

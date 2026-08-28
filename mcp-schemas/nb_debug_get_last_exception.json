@@ -1,0 +1,8 @@
+{
+  "name": "nb_debug_get_last_exception",
+  "description": "Captura informações detalhadas da última exceção/erro que interrompeu a execução no debugger JPDA.",
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}

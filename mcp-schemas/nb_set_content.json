@@ -1,6 +1,6 @@
 {
   "name": "nb_set_content",
-  "description": "Substitui todo o conteúdo em buffer do arquivo no NetBeans.",
+  "description": "Substitui todo o conteúdo do buffer do arquivo no NetBeans de forma atômica.",
   "parameters": {
     "type": "object",
     "properties": {

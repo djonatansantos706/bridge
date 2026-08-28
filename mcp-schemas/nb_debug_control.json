@@ -1,20 +1,12 @@
 {
   "name": "nb_debug_control",
-  "description": "Controla a execução do depurador JPDA no NetBeans.",
+  "description": "Controla a execução da depuração (step_into, step_over, step_out, continue, pause, stop).",
   "parameters": {
     "type": "object",
     "properties": {
       "action": {
         "type": "string",
-        "enum": [
-          "step_into",
-          "step_over",
-          "step_out",
-          "continue",
-          "pause",
-          "stop"
-        ],
-        "description": "Ação de depuração a executar"
+        "description": "Ação: 'step_into', 'step_over', 'step_out', 'continue', 'pause', 'stop'"
       }
     },
     "required": [

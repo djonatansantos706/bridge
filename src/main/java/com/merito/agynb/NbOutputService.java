@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.openide.util.Lookup;
@@ -95,8 +97,22 @@ public class NbOutputService {
     }
 
     public Map<String, Object> getTabLines(String tabName, int sinceLine, int maxLines) throws Exception {
+        return getTabLines(tabName, sinceLine, maxLines, null, false);
+    }
+
+    public Map<String, Object> getTabLines(String tabName, int sinceLine, int maxLines, String filter, boolean caseSensitive) throws Exception {
         int limit = (maxLines > 0) ? maxLines : 500;
         int start = Math.max(0, sinceLine);
+
+        Pattern pattern = null;
+        if (filter != null && !filter.trim().isEmpty()) {
+            int flags = caseSensitive ? 0 : (Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+            try {
+                pattern = Pattern.compile(filter, flags);
+            } catch (PatternSyntaxException e) {
+                pattern = Pattern.compile(Pattern.quote(filter), flags);
+            }
+        }
 
         // Tentar ler via Storage / NbIO do org.netbeans.core.output2
         try {
@@ -117,7 +133,7 @@ public class NbOutputService {
                             Method getNameMethod = nbio.getClass().getMethod("getName");
                             String name = (String) getNameMethod.invoke(nbio);
                             if (tabName == null || tabName.isEmpty() || tabName.equalsIgnoreCase(name)) {
-                                return extractLinesFromNbIO(nbio, start, limit);
+                                return extractLinesFromNbIO(nbio, start, limit, pattern);
                             }
                         }
                     }
@@ -138,8 +154,13 @@ public class NbOutputService {
                     String[] allLines = fullText.split("\\r?\\n");
                     List<String> resultLines = new ArrayList<>();
                     int total = allLines.length;
+                    int lastScanned = start;
                     for (int i = start; i < total && resultLines.size() < limit; i++) {
-                        resultLines.add(allLines[i]);
+                        lastScanned = i;
+                        String line = allLines[i];
+                        if (pattern == null || pattern.matcher(line).find()) {
+                            resultLines.add(line);
+                        }
                     }
                     Map<String, Object> res = new HashMap<>();
                     res.put("ok", true);
@@ -147,7 +168,11 @@ public class NbOutputService {
                     res.put("totalLines", total);
                     res.put("startLine", start);
                     res.put("returnedLines", resultLines.size());
-                    res.put("hasMore", (start + resultLines.size()) < total);
+                    res.put("hasMore", (lastScanned + 1) < total);
+                    if (pattern != null) {
+                        res.put("filter", filter);
+                        res.put("caseSensitive", caseSensitive);
+                    }
                     res.put("lines", resultLines);
                     return res;
                 }
@@ -160,7 +185,7 @@ public class NbOutputService {
         return res;
     }
 
-    private Map<String, Object> extractLinesFromNbIO(Object nbio, int startLine, int limit) throws Exception {
+    private Map<String, Object> extractLinesFromNbIO(Object nbio, int startLine, int limit, Pattern pattern) throws Exception {
         Method getOutMethod = nbio.getClass().getMethod("getOut");
         Object out = getOutMethod.invoke(nbio);
         Method getStorageMethod = out.getClass().getMethod("getStorage");
@@ -171,10 +196,15 @@ public class NbOutputService {
 
         Method getLineMethod = storage.getClass().getMethod("getLine", int.class);
         List<String> lines = new ArrayList<>();
+        int lastScanned = startLine;
 
         for (int i = startLine; i < lineCount && lines.size() < limit; i++) {
+            lastScanned = i;
             Object lineObj = getLineMethod.invoke(storage, i);
-            lines.add(lineObj != null ? lineObj.toString() : "");
+            String lineStr = lineObj != null ? lineObj.toString() : "";
+            if (pattern == null || pattern.matcher(lineStr).find()) {
+                lines.add(lineStr);
+            }
         }
 
         Method getNameMethod = nbio.getClass().getMethod("getName");
@@ -186,7 +216,10 @@ public class NbOutputService {
         res.put("totalLines", lineCount);
         res.put("startLine", startLine);
         res.put("returnedLines", lines.size());
-        res.put("hasMore", (startLine + lines.size()) < lineCount);
+        res.put("hasMore", (lastScanned + 1) < lineCount);
+        if (pattern != null) {
+            res.put("filter", pattern.pattern());
+        }
         res.put("lines", lines);
         return res;
     }

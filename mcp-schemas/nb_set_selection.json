@@ -1,0 +1,36 @@
+{
+  "name": "nb_set_selection",
+  "description": "Define a seleção e posiciona o cursor no editor do NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo"
+      },
+      "start_line": {
+        "type": "integer",
+        "description": "Linha de início da seleção (1-indexada)"
+      },
+      "start_column": {
+        "type": "integer",
+        "description": "Coluna de início da seleção (1-indexada)"
+      },
+      "end_line": {
+        "type": "integer",
+        "description": "Linha de término da seleção"
+      },
+      "end_column": {
+        "type": "integer",
+        "description": "Coluna de término da seleção"
+      }
+    },
+    "required": [
+      "file",
+      "start_line",
+      "start_column",
+      "end_line",
+      "end_column"
+    ]
+  }
+}

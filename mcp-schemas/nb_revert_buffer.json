@@ -1,0 +1,16 @@
+{
+  "name": "nb_revert_buffer",
+  "description": "Descarta todas as alterações em memória no NetBeans e recarrega o buffer a partir do disco.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

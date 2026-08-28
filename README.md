@@ -56,14 +56,14 @@ git clone https://github.com/djonatansantos706/bridge.git ~/bridge
 cd ~/bridge
 mvn clean install
 ```
-> O arquivo `.nbm` do plugin será gerado em: `~/bridge/target/nbm/agy-nb-bridge-1.1.0.nbm`
+> O arquivo `.nbm` do plugin será gerado em: `~/bridge/target/nbm/agy-nb-bridge-1.2.0.nbm`
 
 ### 3. Instalar o Plugin no Apache NetBeans
 1. Abra o **Apache NetBeans**.
 2. Acesse o menu **Tools > Plugins** (ou *Ferramentas > Plugins*).
 3. Vá até a aba **Downloaded** (ou *Baixados*) e clique em **Add Plugins...** (ou *Adicionar Plugins...*).
 4. Selecione o arquivo gerado:
-   `~/bridge/target/nbm/agy-nb-bridge-1.1.0.nbm`
+   `~/bridge/target/nbm/agy-nb-bridge-1.2.0.nbm`
 5. Clique em **Install**, avance e conclua a instalação.
 6. A mensagem `[Antigravity] Bridge Suite ativa na porta 8388` será exibida no rodapé do NetBeans.
 
@@ -137,7 +137,7 @@ python3 ~/bridge/qa_test.py
 Com o NetBeans aberto, todos os testes devem retornar `[APROVADO]`:
 ```text
 ======================================================================
-    INICIANDO QA SUITE: ANTIGRAVITY NETBEANS BRIDGE SUITE 1.1.0
+    INICIANDO QA SUITE: ANTIGRAVITY NETBEANS BRIDGE SUITE v1.2.0
 ======================================================================
 test_bridge_connectivity_if_running ... ok
 test_latin1_encoding_preservation ... ok
@@ -145,7 +145,7 @@ test_mcp_schemas_completeness ... ok
 test_plugin_nbm_artifacts ... ok
 
 ----------------------------------------------------------------------
-Ran 4 tests in 0.004s
+Ran 4 tests in 0.012s
 
 OK
 ======================================================================
@@ -155,34 +155,67 @@ OK
 
 ---
 
-## 🛠️ Catálogo de Ferramentas MCP (24 Ferramentas)
+## 🛠️ Catálogo de Ferramentas MCP (35 Ferramentas - Versão 1.2.0)
+
+### 📝 Edição e Gerenciamento de Buffers (11 Ferramentas)
 
 | Ferramenta | Descrição |
 | :--- | :--- |
-| `nb_status` | Status da bridge, versão e projetos abertos |
-| `nb_open_file` | Abre arquivo na linha informada no editor |
-| `nb_get_buffer` | Lê buffer em memória de um arquivo |
-| `nb_edit_buffer` | Substituição de texto exato no buffer |
-| `nb_replace_lines` | Substituição em intervalo específico de linhas |
-| `nb_set_content` | Substituição total do buffer em memória |
-| `nb_open_commit` | Abre a tela nativa de commit (Git ou Subversion) |
-| `nb_debug_status` | Estado da sessão de depuração JPDA |
-| `nb_debug_set_breakpoint` | Cria breakpoint de linha e condição |
-| `nb_debug_remove_breakpoint` | Remove breakpoint por ID ou linha |
-| `nb_debug_list_breakpoints` | Lista todos os breakpoints ativos na IDE |
-| `nb_debug_control` | Controla fluxo (`step_into`, `step_over`, `step_out`, `continue`, `pause`, `stop`) |
-| `nb_debug_get_stack` | Pilha de chamadas e frames da thread |
-| `nb_debug_get_variables` | Inspeciona variáveis locais e campos do `this` |
-| `nb_debug_evaluate` | Avalia expressão Java em tempo de execução (*Eval*) |
-| `nb_output_list_tabs` | Lista abas da janela de saída |
-| `nb_output_get_text` | Lê logs com paginação incremental |
-| `nb_output_clear` | Limpa buffer de uma aba de saída |
-| `nb_diagnostics_get` | Erros e warnings de compilação da AST |
-| `nb_ast_get_structure` | Outline estruturado de classes, métodos e campos |
-| `nb_project_list` | Lista projetos abertos e projeto principal |
-| `nb_project_open` | Abre diretório como projeto no NetBeans |
-| `nb_project_action` | Executa ação de build/run/test no projeto |
-| `nb_invoke_action` | Invoca ação global pelo Action ID |
+| `nb_status` | Verifica se a Antigravity Bridge Suite está ativa no NetBeans e respondendo. |
+| `nb_open_file` | Abre um arquivo no editor do NetBeans em uma linha específica. |
+| `nb_get_buffer` | Lê o conteúdo atual em memória (buffer) de um arquivo aberto no NetBeans. |
+| `nb_edit_buffer` | Substitui texto exato no buffer do NetBeans sem salvar no disco (marca a aba com * e preserva histórico/Ctrl+Z). |
+| `nb_replace_lines` | Substitui um trecho de código em um intervalo de linhas no buffer do NetBeans. |
+| `nb_set_content` | Substitui todo o conteúdo do buffer do arquivo no NetBeans de forma atômica. |
+| `nb_save_buffer` | Persiste as alterações do buffer de um arquivo no disco (salva o documento no NetBeans). |
+| `nb_revert_buffer` | Descarta todas as alterações em memória no NetBeans e recarrega o buffer a partir do disco. |
+| `nb_format_code` | Formata e reindenta o arquivo ou trecho de linhas no padrão de código nativo do NetBeans. |
+| `nb_get_selection` | Obtém a posição do cursor (linha, coluna) e o texto atualmente selecionado no editor do NetBeans. |
+| `nb_set_selection` | Define a seleção e posiciona o cursor no editor do NetBeans. |
+
+### 🐞 Depuração JPDA Avançada (12 Ferramentas)
+
+| Ferramenta | Descrição |
+| :--- | :--- |
+| `nb_debug_status` | Consulta o estado da sessão de depuração JPDA (RUNNING, STOPPED, STARTING, INACTIVE). |
+| `nb_debug_set_breakpoint` | Insere um breakpoint de linha no NetBeans, com suporte a condição lógica opcional. |
+| `nb_debug_remove_breakpoint` | Remove um breakpoint no NetBeans por ID ou por arquivo e linha. |
+| `nb_debug_list_breakpoints` | Lista todos os breakpoints ativos na IDE NetBeans. |
+| `nb_debug_control` | Controla a execução da depuração (step_into, step_over, step_out, continue, pause, stop). |
+| `nb_debug_get_stack` | Retorna a pilha de chamadas (call stack) e frames da thread atualmente suspensa no debugger JPDA. |
+| `nb_debug_get_variables` | Inspeciona variáveis locais, atributos do 'this', coleções (List, Map, Set) e arrays no frame da pilha. |
+| `nb_debug_evaluate` | Avalia uma expressão Java em tempo de execução no contexto da JVM pausada no debugger (Eval). |
+| `nb_debug_add_watch` | Adiciona uma expressão monitorada na aba Watches do NetBeans. |
+| `nb_debug_list_watches` | Lista todas as expressões monitoradas na aba Watches com valores e tipos avaliados. |
+| `nb_debug_remove_watch` | Remove uma expressão monitorada da aba Watches por ID, expressão ou 'all'. |
+| `nb_debug_get_last_exception` | Captura informações detalhadas da última exceção/erro que interrompeu a execução no debugger JPDA. |
+
+### 🔍 Diagnósticos, AST e Navegação Semântica (4 Ferramentas)
+
+| Ferramenta | Descrição |
+| :--- | :--- |
+| `nb_diagnostics_get` | Obtém instantaneamente erros e warnings de compilação de um arquivo Java a partir da AST do NetBeans sem build em disco. |
+| `nb_ast_get_structure` | Retorna o outline estruturado da AST (classes, interfaces, métodos, parâmetros, campos, anotações e imports) do arquivo Java. |
+| `nb_goto_definition` | Navega semanticamente para a definição de uma classe, método ou símbolo a partir do arquivo e linha. |
+| `nb_find_usages` | Localiza todas as ocorrências e referências de um símbolo no projeto NetBeans. |
+
+### 📟 Console de Saída e Logs (3 Ferramentas)
+
+| Ferramenta | Descrição |
+| :--- | :--- |
+| `nb_output_list_tabs` | Lista todas as abas abertas no console de saída do NetBeans (Run, Debug, Maven, etc.). |
+| `nb_output_get_text` | Lê linhas de uma aba de saída do NetBeans com suporte a filtros Regex ou texto. |
+| `nb_output_clear` | Limpa as linhas de uma aba de saída no NetBeans. |
+
+### 🏗️ Gerenciamento de Projetos e Ações IDE (5 Ferramentas)
+
+| Ferramenta | Descrição |
+| :--- | :--- |
+| `nb_project_list` | Lista todos os projetos abertos no NetBeans e indica qual é o projeto principal. |
+| `nb_project_open` | Abre um diretório como projeto no NetBeans. |
+| `nb_project_action` | Dispara uma ação de projeto (build, clean, clean_and_build, run, test, test_single, run_single, debug_single) no NetBeans. |
+| `nb_invoke_action` | Invoca qualquer ação nativa ou global registrada no NetBeans a partir do Action ID (ex: 'org-netbeans-core-actions-SaveAllAction'). |
+| `nb_open_commit` | Abre o diálogo nativo de commit do NetBeans (Git ou Subversion) com arquivos pré-selecionados. |
 
 ---
 

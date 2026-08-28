@@ -10,7 +10,7 @@
       },
       "project": {
         "type": "string",
-        "description": "Caminho do diretório do projeto (opcional, padrão projeto principal ou projeto do arquivo)"
+        "description": "Caminho do diretório do projeto (opcional, padrão projeto principal)"
       },
       "file": {
         "type": "string",

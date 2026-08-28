@@ -1,12 +1,12 @@
 {
   "name": "nb_debug_get_stack",
-  "description": "Retorna o call stack (pilha de chamadas) e frames da thread atual ou de uma thread específica.",
+  "description": "Retorna a pilha de chamadas (call stack) e frames da thread atualmente suspensa no debugger JPDA.",
   "parameters": {
     "type": "object",
     "properties": {
       "thread": {
         "type": "string",
-        "description": "Nome da thread (opcional, padrão thread atual selecionada)"
+        "description": "Nome da thread (opcional, padrão thread atual suspensa)"
       }
     }
   }
