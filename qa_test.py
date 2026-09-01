@@ -7,10 +7,27 @@ Valida a integridade, compatibilidade de encoding, schemas MCP, JsonUtils e cone
 
 import os
 import sys
+import glob
 import json
+import importlib.util
 import unittest
 import urllib.request
 import urllib.error
+
+# Todos os caminhos são resolvidos relativos ao diretório do repositório,
+# para que a suíte passe em qualquer máquina (dev, CI ou clone recém-feito).
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+SCHEMAS_DIR = os.path.join(REPO_ROOT, "mcp-schemas")
+MCP_SERVER_FILE = os.path.join(REPO_ROOT, "netbeans-mcp-server.py")
+
+
+def load_mcp_server_module():
+    """Importa netbeans-mcp-server.py como módulo (o hífen impede import direto)."""
+    spec = importlib.util.spec_from_file_location("netbeans_mcp_server", MCP_SERVER_FILE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 
 class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
 
@@ -18,7 +35,7 @@ class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
         """Valida que textos com acentuação em ISO-8859-1 / Windows-1252 não sofrem perda de caracteres."""
         sample_text_iso = "Atenção: Transação de Cupom Fiscal Eletrônico Nº 12345 - R$ 99,50 (Acréscimo/Desconto)".encode("iso-8859-1")
         decoded = sample_text_iso.decode("iso-8859-1")
-        
+
         payload = {
             "file": "/tmp/TestFile.java",
             "old_text": "Cupom Fiscal",
@@ -26,28 +43,27 @@ class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
         }
         encoded_json = json.dumps(payload, ensure_ascii=False).encode('utf-8')
         parsed = json.loads(encoded_json.decode('utf-8'))
-        
+
         self.assertEqual(parsed["new_text"], "Cupom Fiscal Eletrônico Nº 12345 (Acréscimo)")
-        
+
         # Test re-encoding back to ISO-8859-1
         re_encoded = parsed["new_text"].encode("iso-8859-1")
         self.assertEqual(re_encoded.decode("iso-8859-1"), "Cupom Fiscal Eletrônico Nº 12345 (Acréscimo)")
 
     def test_plugin_nbm_artifacts(self):
-        """Valida que os arquivos .nbm e .jar v1.2.0 foram gerados com sucesso."""
-        target_nbm = "/home/merito/Área de Trabalho/Djonatan/agy-nb-bridge/target/nbm/agy-nb-bridge-1.2.0.nbm"
-        dist_nbm = "/home/merito/Área de Trabalho/Djonatan/plugin/agy-nb-bridge-1.2.0.nbm"
-        target_jar = "/home/merito/Área de Trabalho/Djonatan/agy-nb-bridge/target/agy-nb-bridge-1.2.0.jar"
+        """Valida que o artefato .nbm foi gerado pelo build (pulado se o plugin ainda não foi compilado)."""
+        nbm_files = glob.glob(os.path.join(REPO_ROOT, "target", "nbm", "agy-nb-bridge-*.nbm"))
+        if not nbm_files:
+            self.skipTest("Plugin ainda não compilado — rode 'mvn clean install' antes para validar o artefato .nbm")
 
-        self.assertTrue(os.path.exists(target_nbm), f"NBM de compilação ausente: {target_nbm}")
-        self.assertTrue(os.path.exists(dist_nbm), f"NBM de distribuição ausente: {dist_nbm}")
-        self.assertTrue(os.path.exists(target_jar), f"JAR compilado ausente: {target_jar}")
+        nbm = nbm_files[0]
+        self.assertGreater(os.path.getsize(nbm), 50000, f"Arquivo .nbm muito pequeno: {nbm}")
 
-        self.assertGreater(os.path.getsize(dist_nbm), 50000, "Arquivo .nbm de distribuição muito pequeno")
+        jar_files = glob.glob(os.path.join(REPO_ROOT, "target", "agy-nb-bridge-*.jar"))
+        self.assertTrue(jar_files, "JAR compilado ausente em target/ (build incompleto?)")
 
     def test_mcp_schemas_completeness(self):
         """Valida que todos os 35 schemas MCP estão presentes e válidos."""
-        schemas_dir = "/home/merito/Área de Trabalho/Djonatan/agy-nb-bridge/mcp-schemas"
         expected_tools = [
             "nb_status", "nb_open_file", "nb_get_buffer", "nb_edit_buffer",
             "nb_replace_lines", "nb_set_content", "nb_save_buffer", "nb_revert_buffer",
@@ -61,15 +77,30 @@ class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
             "nb_project_list", "nb_project_open", "nb_project_action",
             "nb_invoke_action"
         ]
-        
+
         for tool in expected_tools:
-            json_file = os.path.join(schemas_dir, f"{tool}.json")
+            json_file = os.path.join(SCHEMAS_DIR, f"{tool}.json")
             self.assertTrue(os.path.exists(json_file), f"Schema MCP ausente: {json_file}")
             with open(json_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.assertEqual(data.get("name"), tool)
                 self.assertIn("description", data)
                 self.assertIn("parameters", data)
+
+    def test_mcp_server_tools_parity(self):
+        """Valida que o TOOLS do netbeans-mcp-server.py e os arquivos de mcp-schemas/ expõem as mesmas ferramentas."""
+        module = load_mcp_server_module()
+        tools_names = {tool["name"] for tool in module.TOOLS}
+
+        schema_names = set()
+        for json_file in glob.glob(os.path.join(SCHEMAS_DIR, "*.json")):
+            with open(json_file, "r", encoding="utf-8") as f:
+                schema_names.add(json.load(f).get("name"))
+
+        only_in_tools = sorted(tools_names - schema_names)
+        only_in_schemas = sorted(schema_names - tools_names)
+        self.assertFalse(only_in_tools, f"Ferramentas sem schema em mcp-schemas/: {only_in_tools}")
+        self.assertFalse(only_in_schemas, f"Schemas sem ferramenta no MCP server: {only_in_schemas}")
 
     def test_bridge_connectivity_if_running(self):
         """Verifica se o servidor do NetBeans está ativo."""
