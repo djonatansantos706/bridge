@@ -15,29 +15,41 @@ import java.util.logging.Logger;
 
 /**
  * Handler base com Template Method para tratamento unificado de requisições HTTP REST.
- * Encapsula leitura de body, parsing JSON, injeção de CORS, cabeçalhos e tratamento de erros.
+ * Encapsula leitura de body, parsing JSON, autenticação por token, cabeçalhos e tratamento de erros.
  */
 public abstract class AbstractJsonHandler implements HttpHandler {
 
     private static final Logger LOG = Logger.getLogger(AbstractJsonHandler.class.getName());
     private final boolean requirePost;
+    private final boolean requireAuth;
 
     public AbstractJsonHandler() {
-        this(true);
+        this(true, true);
     }
 
     public AbstractJsonHandler(boolean requirePost) {
+        this(requirePost, true);
+    }
+
+    public AbstractJsonHandler(boolean requirePost, boolean requireAuth) {
         this.requirePost = requirePost;
+        this.requireAuth = requireAuth;
     }
 
     @Override
     public final void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
 
-        // Tratar pre-flight CORS OPTIONS
-        if ("OPTIONS".equalsIgnoreCase(method)) {
-            sendResponse(exchange, 204, "");
-            return;
+        // Autenticação: exige o token local em todos os endpoints (exceto /ping)
+        if (requireAuth) {
+            String candidate = exchange.getRequestHeaders().getFirst(BridgeConstants.HEADER_TOKEN);
+            if (!BridgeToken.isValid(candidate)) {
+                BridgeResponse err = BridgeResponse.error(401,
+                        "Token de autenticação ausente ou inválido. Envie o header " + BridgeConstants.HEADER_TOKEN
+                        + " com o conteúdo de " + BridgeToken.tokenFile());
+                sendResponse(exchange, err.getStatusCode(), err.toJson());
+                return;
+            }
         }
 
         // Validação de método POST obrigatório quando configurado
@@ -98,10 +110,9 @@ public abstract class AbstractJsonHandler implements HttpHandler {
 
     private void sendResponse(HttpExchange exchange, int statusCode, String responseBody) throws IOException {
         byte[] bytes = responseBody.getBytes(StandardCharsets.UTF_8);
+        // Sem headers CORS: os clientes da bridge são processos locais (MCP/CLI),
+        // nunca navegadores — negar CORS impede que páginas web acionem a porta.
         exchange.getResponseHeaders().set(BridgeConstants.HEADER_CONTENT_TYPE, BridgeConstants.MIME_JSON);
-        exchange.getResponseHeaders().set(BridgeConstants.HEADER_ALLOW_ORIGIN, BridgeConstants.CORS_ORIGIN_ALL);
-        exchange.getResponseHeaders().set(BridgeConstants.HEADER_ALLOW_METHODS, BridgeConstants.CORS_METHODS);
-        exchange.getResponseHeaders().set(BridgeConstants.HEADER_ALLOW_HEADERS, BridgeConstants.CORS_HEADERS);
 
         exchange.sendResponseHeaders(statusCode, bytes.length);
         OutputStream os = exchange.getResponseBody();

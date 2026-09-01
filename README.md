@@ -69,6 +69,25 @@ mvn clean install
 
 ---
 
+## 🔐 Autenticação (automática)
+
+A bridge só aceita requisições autenticadas. Na primeira inicialização, o plugin gera um token aleatório e o grava em:
+
+```text
+~/.config/agy-nb-bridge/token   (permissão 0600 — somente o seu usuário lê)
+```
+
+Os clientes oficiais (`netbeans-mcp-server.py` e `agy_nb_client.py`) leem esse arquivo automaticamente e enviam o token no header `X-Bridge-Token` — **nenhuma configuração manual é necessária**. Requisições sem o token recebem `401`, e o servidor não envia headers CORS: isso impede que páginas web abertas no navegador acionem a porta 8388 (a porta já era restrita a `127.0.0.1`; o token fecha o vetor de scripts locais/navegador). Apenas o endpoint `/ping` fica aberto, para diagnóstico de conectividade.
+
+Para integrar um cliente próprio, basta enviar o conteúdo do arquivo no header:
+
+```bash
+curl -s -X POST http://127.0.0.1:8388/status \
+  -H "X-Bridge-Token: $(cat ~/.config/agy-nb-bridge/token)"
+```
+
+---
+
 ## 🤖 Como Configurar nos Assistentes de IA
 
 ### Opção A: Configuração no Claude Code

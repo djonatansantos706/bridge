@@ -6,12 +6,23 @@ Expõe ferramentas para interação in-memory, depuração JPDA avançada, logs 
 diagnósticos AST, navegação semântica e controle de projetos no Apache NetBeans via MCP.
 """
 
+import os
 import sys
 import json
 import urllib.request
 import urllib.error
 
 BRIDGE_URL = "http://127.0.0.1:8388"
+TOKEN_FILE = os.path.join(os.path.expanduser("~"), ".config", "agy-nb-bridge", "token")
+
+
+def read_token():
+    """Lê o token de autenticação gravado pelo plugin do NetBeans na inicialização."""
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return None
 
 TOOLS = [
     # --- Status & Core ---
@@ -432,6 +443,9 @@ def call_bridge(endpoint, payload=None):
     url = f"{BRIDGE_URL}{endpoint}"
     data = None
     headers = {"Content-Type": "application/json; charset=utf-8"}
+    token = read_token()
+    if token:
+        headers["X-Bridge-Token"] = token
     if payload is not None:
         data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
     req = urllib.request.Request(url, data=data, headers=headers)
@@ -441,6 +455,8 @@ def call_bridge(endpoint, payload=None):
             return json.loads(res_body)
     except urllib.error.HTTPError as e:
         err_msg = e.read().decode('utf-8')
+        if e.code == 401 and token is None:
+            return {"ok": False, "error": f"Token de autenticação não encontrado em {TOKEN_FILE}. Abra o NetBeans com o plugin instalado (o token é criado quando a bridge inicia)."}
         try:
             return json.loads(err_msg)
         except Exception:

@@ -29,7 +29,7 @@ public final class AgyBridgeAction implements ActionListener {
         }
 
         String msg = running
-            ? "Antigravity NetBeans Bridge está ATIVO na porta " + AgyBridgeServer.getInstance().getPort() + ".\n\nEdições enviadas pelo Antigravity serão aplicadas diretamente na memória do editor, preservando o histórico local (* não salvo) e o encoding do projeto."
+            ? "Antigravity NetBeans Bridge está ATIVO na porta " + AgyBridgeServer.getInstance().getPort() + ".\n\nEdições enviadas pelo Antigravity serão aplicadas diretamente na memória do editor, preservando o histórico local (* não salvo) e o encoding do projeto.\n\nToken de autenticação: " + com.merito.agynb.core.BridgeToken.tokenFile() + "\n(os clientes da bridge leem este arquivo automaticamente)"
             : "Antigravity NetBeans Bridge está INATIVO.";
 
         NotifyDescriptor nd = new NotifyDescriptor.Message(msg, NotifyDescriptor.INFORMATION_MESSAGE);

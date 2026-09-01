@@ -5,21 +5,34 @@ Antigravity NetBeans Bridge Client & CLI Tool
 Permite que o Antigravity interaja diretamente com os buffers em memória do NetBeans.
 """
 
+import os
 import sys
 import json
 import urllib.request
 import urllib.error
 
 DEFAULT_URL = "http://127.0.0.1:8388"
+TOKEN_FILE = os.path.join(os.path.expanduser("~"), ".config", "agy-nb-bridge", "token")
+
+def read_token():
+    """Lê o token de autenticação gravado pelo plugin do NetBeans na inicialização."""
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return None
 
 def send_request(endpoint, payload=None):
     url = f"{DEFAULT_URL}{endpoint}"
     headers = {"Content-Type": "application/json; charset=utf-8"}
-    
+    token = read_token()
+    if token:
+        headers["X-Bridge-Token"] = token
+
     data = None
     if payload is not None:
         data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-        
+
     req = urllib.request.Request(url, data=data, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=5) as response:

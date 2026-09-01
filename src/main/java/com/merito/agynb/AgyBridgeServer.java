@@ -2,6 +2,7 @@ package com.merito.agynb;
 
 import com.merito.agynb.core.BridgeConstants;
 import com.merito.agynb.core.BridgeResponse;
+import com.merito.agynb.core.BridgeToken;
 import com.merito.agynb.core.AbstractJsonHandler;
 import com.merito.agynb.handlers.DebugHandlers;
 import com.merito.agynb.handlers.DiagnosticsHandlers;
@@ -46,6 +47,9 @@ public class AgyBridgeServer {
         }
 
         try {
+            // Garante que o token exista em disco antes de qualquer cliente conectar
+            BridgeToken.getOrCreate();
+
             server = HttpServer.create(new InetSocketAddress(BridgeConstants.DEFAULT_HOST, BridgeConstants.DEFAULT_PORT), 0);
             server.setExecutor(Executors.newCachedThreadPool());
 
@@ -130,7 +134,8 @@ public class AgyBridgeServer {
 
     private static class PingHandler extends AbstractJsonHandler {
         public PingHandler() {
-            super(false);
+            // Sem POST e sem token: /ping serve só para diagnóstico de conectividade
+            super(false, false);
         }
 
         @Override
