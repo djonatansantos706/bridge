@@ -49,25 +49,38 @@ public abstract class AbstractJsonHandler implements HttpHandler {
 
         Map<String, Object> params = parseRequestBody(exchange);
 
+        long startNanos = System.nanoTime();
+        int statusCode = 500;
         try {
             BridgeResponse response = handleRequest(params, exchange);
             if (response == null) {
                 response = BridgeResponse.ok();
             }
-            sendResponse(exchange, response.getStatusCode(), response.toJson());
+            statusCode = response.getStatusCode();
+            sendResponse(exchange, statusCode, response.toJson());
 
         } catch (IllegalArgumentException ex) {
             BridgeResponse err = BridgeResponse.error(400, ex.getMessage());
-            sendResponse(exchange, err.getStatusCode(), err.toJson());
+            statusCode = err.getStatusCode();
+            sendResponse(exchange, statusCode, err.toJson());
 
         } catch (IllegalStateException ex) {
             BridgeResponse err = BridgeResponse.error(409, ex.getMessage());
-            sendResponse(exchange, err.getStatusCode(), err.toJson());
+            statusCode = err.getStatusCode();
+            sendResponse(exchange, statusCode, err.toJson());
 
         } catch (Throwable ex) {
             LOG.log(Level.WARNING, "Erro durante execução de " + exchange.getRequestURI(), ex);
             BridgeResponse err = BridgeResponse.error(500, ex.getMessage() != null ? ex.getMessage() : ex.toString());
-            sendResponse(exchange, err.getStatusCode(), err.toJson());
+            statusCode = err.getStatusCode();
+            sendResponse(exchange, statusCode, err.toJson());
+
+        } finally {
+            String path = exchange.getRequestURI().getPath();
+            if (!"/ping".equals(path)) {
+                long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
+                BridgeLog.request(path, getStringParam(params, "file", "path"), statusCode < 400, elapsedMs);
+            }
         }
     }
 
