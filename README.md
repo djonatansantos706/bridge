@@ -36,6 +36,11 @@ Suíte completa de integração bidirecional em tempo real entre o **Apache NetB
    - Ciclo de vida: `build`, `clean`, `clean_and_build`, `run`, `test`, `test_single`, `run_single`, `debug_single` via `ActionProvider`.
    - Disparo de qualquer ação registrada na IDE pelo Action ID (`Actions.forID`).
 
+6. **Visibilidade e Controle do Agente na IDE:**
+   - **Aba "Antigravity Bridge"** na janela de Output (*Window > Output*): log de auditoria em tempo real de cada requisição atendida — hora, endpoint, arquivo alvo, resultado e duração. A aba nunca rouba o foco, e o próprio agente pode consultá-la via `nb_output_get_text`.
+   - **Notificações no sininho do NetBeans**: alterações de buffer entram silenciosamente no histórico de notificações; operações que tocam o disco (salvar) ou descartam trabalho (reverter) mostram balão. Nada mais se perde no rodapé.
+   - **Kill switch**: *Tools > Pausar/Retomar Antigravity Bridge* interrompe o servidor na hora — nenhum agente lê ou altera nada na IDE até você retomar, sem desinstalar o plugin nem fechar o NetBeans.
+
 ---
 
 ## 📦 Passo a Passo de Instalação no Ubuntu / Linux

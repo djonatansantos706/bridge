@@ -9,10 +9,12 @@ import com.merito.agynb.handlers.DiagnosticsHandlers;
 import com.merito.agynb.handlers.EditorHandlers;
 import com.merito.agynb.handlers.OutputHandlers;
 import com.merito.agynb.handlers.ProjectHandlers;
+import com.merito.agynb.core.BridgeLog;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,6 +30,7 @@ public class AgyBridgeServer {
     private static final AgyBridgeServer INSTANCE = new AgyBridgeServer();
 
     private HttpServer server;
+    private ExecutorService executor;
     private boolean running = false;
 
     public static AgyBridgeServer getInstance() {
@@ -51,7 +54,8 @@ public class AgyBridgeServer {
             BridgeToken.getOrCreate();
 
             server = HttpServer.create(new InetSocketAddress(BridgeConstants.DEFAULT_HOST, BridgeConstants.DEFAULT_PORT), 0);
-            server.setExecutor(Executors.newCachedThreadPool());
+            executor = Executors.newCachedThreadPool();
+            server.setExecutor(executor);
 
             // Core & Status
             server.createContext("/ping", new PingHandler());
@@ -106,6 +110,7 @@ public class AgyBridgeServer {
             running = true;
             LOG.info("[Antigravity] Bridge Suite v" + BridgeConstants.VERSION + " iniciada na porta " + BridgeConstants.DEFAULT_PORT);
             StatusDisplayer.getDefault().setStatusText("[Antigravity] Bridge Suite v" + BridgeConstants.VERSION + " ativa na porta " + BridgeConstants.DEFAULT_PORT);
+            BridgeLog.event("Bridge Suite v" + BridgeConstants.VERSION + " ativa na porta " + BridgeConstants.DEFAULT_PORT);
 
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "[Antigravity] Falha ao iniciar servidor HTTP na porta " + BridgeConstants.DEFAULT_PORT, ex);
@@ -118,9 +123,14 @@ public class AgyBridgeServer {
         }
         try {
             server.stop(1);
+            if (executor != null) {
+                executor.shutdown();
+                executor = null;
+            }
             running = false;
             LOG.info("[Antigravity] Bridge Suite finalizada.");
             StatusDisplayer.getDefault().setStatusText("[Antigravity] Bridge finalizada.");
+            BridgeLog.event("Bridge PAUSADA — nenhum agente consegue acessar a IDE até retomar");
         } catch (Exception ex) {
             LOG.log(Level.WARNING, "Erro ao parar servidor HTTP", ex);
         }

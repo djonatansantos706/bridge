@@ -12,6 +12,7 @@ import javax.swing.JEditorPane;
 import javax.swing.text.Caret;
 import javax.swing.text.Document;
 import javax.swing.text.StyledDocument;
+import com.merito.agynb.core.BridgeNotifier;
 import org.netbeans.modules.editor.indent.api.Reformat;
 import org.openide.awt.StatusDisplayer;
 import org.openide.cookies.EditorCookie;
@@ -156,6 +157,7 @@ public class NbEditorService {
         });
 
         StatusDisplayer.getDefault().setStatusText("[Antigravity] Buffer modificado com sucesso (" + occurrences[0] + " ocorrência(s)) em: " + fo.getNameExt());
+        BridgeNotifier.bufferChanged(fo.getNameExt(), occurrences[0] + " ocorrência(s) substituída(s) — não salvo (*), Ctrl+Z disponível");
         return true;
     }
 
@@ -202,6 +204,7 @@ public class NbEditorService {
         });
 
         StatusDisplayer.getDefault().setStatusText("[Antigravity] Intervalo L" + startLine + "-L" + endLine + " atualizado em: " + fo.getNameExt());
+        BridgeNotifier.bufferChanged(fo.getNameExt(), "linhas " + startLine + "-" + endLine + " substituídas — não salvo (*), Ctrl+Z disponível");
         return true;
     }
 
@@ -226,6 +229,7 @@ public class NbEditorService {
         });
 
         StatusDisplayer.getDefault().setStatusText("[Antigravity] Buffer totalmente recarregado em: " + fo.getNameExt());
+        BridgeNotifier.bufferChanged(fo.getNameExt(), "conteúdo completo substituído — não salvo (*), Ctrl+Z disponível");
         return true;
     }
 
@@ -243,6 +247,7 @@ public class NbEditorService {
         if (saveCookie != null) {
             saveCookie.save();
             StatusDisplayer.getDefault().setStatusText("[Antigravity] Arquivo salvo no disco: " + fo.getNameExt());
+            BridgeNotifier.diskChanged("Bridge: arquivo salvo no disco — " + fo.getNameExt(), fo.getPath());
             return true;
         }
 
@@ -250,6 +255,7 @@ public class NbEditorService {
         if (editorCookie != null) {
             editorCookie.saveDocument();
             StatusDisplayer.getDefault().setStatusText("[Antigravity] Documento salvo no disco: " + fo.getNameExt());
+            BridgeNotifier.diskChanged("Bridge: arquivo salvo no disco — " + fo.getNameExt(), fo.getPath());
             return true;
         }
 
@@ -286,6 +292,8 @@ public class NbEditorService {
 
         dataObj.setModified(false);
         StatusDisplayer.getDefault().setStatusText("[Antigravity] Buffer revertido a partir do disco: " + fo.getNameExt());
+        BridgeNotifier.diskChanged("Bridge: buffer revertido — " + fo.getNameExt(),
+                "Alterações em memória foram descartadas; conteúdo recarregado do disco.");
         return true;
     }
 
@@ -330,6 +338,7 @@ public class NbEditorService {
         }
 
         StatusDisplayer.getDefault().setStatusText("[Antigravity] Código formatado com sucesso em: " + fo.getNameExt());
+        BridgeNotifier.bufferChanged(fo.getNameExt(), "código reformatado — não salvo (*), Ctrl+Z disponível");
         return true;
     }
 
