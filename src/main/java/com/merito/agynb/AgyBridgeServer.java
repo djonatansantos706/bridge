@@ -9,6 +9,7 @@ import com.merito.agynb.handlers.DiagnosticsHandlers;
 import com.merito.agynb.handlers.EditorHandlers;
 import com.merito.agynb.handlers.OutputHandlers;
 import com.merito.agynb.handlers.ProjectHandlers;
+import com.merito.agynb.handlers.FormHandlers;
 import com.merito.agynb.core.BridgeLog;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -74,6 +75,8 @@ public class AgyBridgeServer {
             server.createContext("/set-selection", new EditorHandlers.SetSelectionHandler());
             server.createContext("/commit", new EditorHandlers.CommitHandler());
             server.createContext("/open-commit", new EditorHandlers.CommitHandler());
+            server.createContext("/create-folder", new EditorHandlers.CreateFolderHandler());
+            server.createContext("/create-file", new EditorHandlers.CreateFileHandler());
 
             // JPDA Debugger
             server.createContext("/debug/status", new DebugHandlers.DebugStatusHandler());
@@ -105,6 +108,11 @@ public class AgyBridgeServer {
             server.createContext("/projects/open", new ProjectHandlers.ProjectOpenHandler());
             server.createContext("/projects/action", new ProjectHandlers.ProjectActionHandler());
             server.createContext("/invoke", new ProjectHandlers.InvokeActionHandler());
+
+            // Swing Forms & Matisse Engine
+            server.createContext("/form/inspect", new FormHandlers.FormInspectHandler());
+            server.createContext("/form/set-property", new FormHandlers.FormSetPropertyHandler());
+            server.createContext("/form/create-blueprint", new FormHandlers.FormCreateBlueprintHandler());
 
             server.start();
             running = true;

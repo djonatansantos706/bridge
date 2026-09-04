@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Antigravity NetBeans Bridge Suite v1.2.0 - MCP Server (Stdio)
+Antigravity NetBeans Bridge Suite v1.3.0 - MCP Server (Stdio)
 Expõe ferramentas para interação in-memory, depuração JPDA avançada, logs de saída,
 diagnósticos AST, navegação semântica e controle de projetos no Apache NetBeans via MCP.
 """
@@ -98,6 +98,32 @@ TOOLS = [
                 "content": {"type": "string", "description": "Novo conteúdo completo do arquivo"}
             },
             "required": ["file", "content"]
+        }
+    },
+    {
+        "name": "nb_create_folder",
+        "description": "Cria um diretório/pasta recursivamente e sincroniza na árvore de projetos do NetBeans.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Caminho absoluto do diretório a criar"}
+            },
+            "required": ["path"]
+        }
+    },
+    {
+        "name": "nb_create_file",
+        "description": "Cria um novo arquivo (.java, .xml, etc.) com encoding apropriado (padrão windows-1252 para Java), sincroniza com NetBeans e abre no editor.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Caminho absoluto do arquivo a criar"},
+                "content": {"type": "string", "description": "Conteúdo inicial do arquivo (opcional)"},
+                "encoding": {"type": "string", "description": "Encoding do arquivo (opcional, padrão windows-1252 para .java, utf-8 para outros)"},
+                "open_in_editor": {"type": "boolean", "description": "Se deve abrir o arquivo no editor do NetBeans (padrão true)"},
+                "line": {"type": "integer", "description": "Linha para posicionar o cursor (padrão 1)"}
+            },
+            "required": ["path"]
         }
     },
     {
@@ -436,6 +462,48 @@ TOOLS = [
             },
             "required": ["action_id"]
         }
+    },
+
+    # --- Swing Forms & Matisse Engine ---
+    {
+        "name": "nb_form_inspect",
+        "description": "Inspeciona um arquivo de formulário Swing (.form ou .java) no NetBeans e retorna a árvore de componentes, layouts e propriedades.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "file": {"type": "string", "description": "Caminho absoluto do arquivo .form ou .java"}
+            },
+            "required": ["file"]
+        }
+    },
+    {
+        "name": "nb_form_set_property",
+        "description": "Modifica ou insere cirurgicamente uma propriedade em um componente do formulário .form do NetBeans sem corromper o XML.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "file": {"type": "string", "description": "Caminho absoluto do arquivo .form ou .java"},
+                "component": {"type": "string", "description": "Nome da variável do componente (ex: jButton_Fechar)"},
+                "property": {"type": "string", "description": "Nome da propriedade (ex: text, toolTipText, enabled)"},
+                "value": {"type": "string", "description": "Novo valor da propriedade"},
+                "type": {"type": "string", "description": "Tipo Java da propriedade (opcional, inferido se omitido)"}
+            },
+            "required": ["file", "component", "property", "value"]
+        }
+    },
+    {
+        "name": "nb_form_create_blueprint",
+        "description": "Cria um formulário Swing completo (.form e .java companheiro) a partir de um blueprint declarativo (árvore de componentes), com suporte ao padrão MVP e encoding windows-1252.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "target_dir": {"type": "string", "description": "Diretório de destino para gravar os arquivos"},
+                "package_name": {"type": "string", "description": "Nome do pacote Java (ex: br.com.tef.netunna)"},
+                "class_name": {"type": "string", "description": "Nome da classe (ex: OperadorVW)"},
+                "blueprint": {"type": "object", "description": "Especificação da árvore de componentes e layouts em JSON"}
+            },
+            "required": ["target_dir", "package_name", "class_name", "blueprint"]
+        }
     }
 ]
 
@@ -542,6 +610,17 @@ def execute_tool(tool_name, args):
     elif tool_name == "nb_invoke_action":
         return call_bridge("/invoke", args)
 
+    elif tool_name == "nb_form_inspect":
+        return call_bridge("/form/inspect", args)
+    elif tool_name == "nb_form_set_property":
+        return call_bridge("/form/set-property", args)
+    elif tool_name == "nb_form_create_blueprint":
+        return call_bridge("/form/create-blueprint", args)
+    elif tool_name == "nb_create_folder":
+        return call_bridge("/create-folder", args)
+    elif tool_name == "nb_create_file":
+        return call_bridge("/create-file", args)
+
     return {"ok": False, "error": f"Ferramenta desconhecida: {tool_name}"}
 
 def main():
@@ -566,7 +645,7 @@ def main():
                     "protocolVersion": "2024-11-05",
                     "serverInfo": {
                         "name": "antigravity-netbeans-bridge",
-                        "version": "1.2.0"
+                        "version": "1.3.0"
                     },
                     "capabilities": {
                         "tools": {}

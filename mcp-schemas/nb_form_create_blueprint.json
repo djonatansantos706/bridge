@@ -1,0 +1,31 @@
+{
+  "name": "nb_form_create_blueprint",
+  "description": "Cria um formulário Swing completo (.form e .java companheiro) a partir de um blueprint declarativo (árvore de componentes), com suporte ao padrão MVP e encoding windows-1252.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "target_dir": {
+        "type": "string",
+        "description": "Diretório de destino para gravar os arquivos"
+      },
+      "package_name": {
+        "type": "string",
+        "description": "Nome do pacote Java (ex: br.com.tef.netunna)"
+      },
+      "class_name": {
+        "type": "string",
+        "description": "Nome da classe (ex: OperadorVW)"
+      },
+      "blueprint": {
+        "type": "object",
+        "description": "Especificação da árvore de componentes e layouts em JSON"
+      }
+    },
+    "required": [
+      "target_dir",
+      "package_name",
+      "class_name",
+      "blueprint"
+    ]
+  }
+}

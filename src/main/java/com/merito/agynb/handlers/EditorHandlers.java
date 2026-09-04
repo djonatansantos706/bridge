@@ -188,4 +188,99 @@ public final class EditorHandlers {
                     .put("message", res.message);
         }
     }
+
+    public static class CreateFolderHandler extends AbstractJsonHandler {
+        @Override
+        protected BridgeResponse handleRequest(Map<String, Object> params, HttpExchange exchange) throws Exception {
+            String path = getStringParam(params, "path", "dir", "folder");
+            if (path == null || path.trim().isEmpty()) {
+                throw new IllegalArgumentException("Parâmetro 'path' é obrigatório.");
+            }
+
+            java.io.File dir = new java.io.File(path);
+            boolean created = false;
+            if (!dir.exists()) {
+                created = dir.mkdirs();
+            }
+
+            // Sincroniza com o sistema de arquivos do NetBeans
+            org.openide.filesystems.FileObject fo = org.openide.filesystems.FileUtil.toFileObject(dir);
+            if (fo != null) {
+                fo.refresh();
+                org.openide.filesystems.FileObject parent = fo.getParent();
+                if (parent != null) {
+                    parent.refresh();
+                }
+            } else {
+                org.openide.filesystems.FileUtil.refreshFor(dir);
+            }
+
+            return BridgeResponse.ok("message", "Diretório sincronizado com sucesso no NetBeans")
+                    .put("path", dir.getAbsolutePath())
+                    .put("created", created)
+                    .put("exists", dir.exists());
+        }
+    }
+
+    public static class CreateFileHandler extends AbstractJsonHandler {
+        @Override
+        protected BridgeResponse handleRequest(Map<String, Object> params, HttpExchange exchange) throws Exception {
+            String path = getStringParam(params, "path", "file", "filePath");
+            if (path == null || path.trim().isEmpty()) {
+                throw new IllegalArgumentException("Parâmetro 'path' é obrigatório.");
+            }
+
+            String content = getStringParam(params, "content");
+            if (content == null) {
+                content = "";
+            }
+
+            String encodingName = getStringParam(params, "encoding");
+            java.nio.charset.Charset charset;
+            if (encodingName != null && !encodingName.trim().isEmpty()) {
+                charset = java.nio.charset.Charset.forName(encodingName);
+            } else if (path.endsWith(".java")) {
+                charset = java.nio.charset.Charset.forName("windows-1252");
+            } else {
+                charset = java.nio.charset.StandardCharsets.UTF_8;
+            }
+
+            boolean openInEditor = getBoolParam(params, true, "open_in_editor", "open");
+            int line = getIntParam(params, 1, "line");
+
+            java.io.File file = new java.io.File(path);
+            java.io.File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            try (java.io.OutputStream fos = new java.io.FileOutputStream(file);
+                 java.io.Writer writer = new java.io.OutputStreamWriter(fos, charset)) {
+                writer.write(content);
+                writer.flush();
+            }
+
+            // Sincroniza com o NetBeans
+            org.openide.filesystems.FileObject fo = org.openide.filesystems.FileUtil.toFileObject(file);
+            if (fo != null) {
+                fo.refresh();
+                org.openide.filesystems.FileObject p = fo.getParent();
+                if (p != null) {
+                    p.refresh();
+                }
+            } else {
+                org.openide.filesystems.FileUtil.refreshFor(file);
+            }
+
+            boolean opened = false;
+            if (openInEditor) {
+                opened = NbEditorService.getInstance().openFileAtLine(file.getAbsolutePath(), line);
+            }
+
+            return BridgeResponse.ok("message", "Arquivo criado e sincronizado com sucesso no NetBeans")
+                    .put("path", file.getAbsolutePath())
+                    .put("encoding", charset.name())
+                    .put("opened", opened);
+        }
+    }
 }

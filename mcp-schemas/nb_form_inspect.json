@@ -1,0 +1,16 @@
+{
+  "name": "nb_form_inspect",
+  "description": "Inspeciona um arquivo de formulário Swing (.form ou .java) no NetBeans e retorna a árvore de componentes, layouts e propriedades.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo .form ou .java"
+      }
+    },
+    "required": [
+      "file"
+    ]
+  }
+}

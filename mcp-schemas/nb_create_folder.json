@@ -1,0 +1,16 @@
+{
+  "name": "nb_create_folder",
+  "description": "Cria um diretório/pasta recursivamente e sincroniza na árvore de projetos do NetBeans.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "path": {
+        "type": "string",
+        "description": "Caminho absoluto do diretório a criar"
+      }
+    },
+    "required": [
+      "path"
+    ]
+  }
+}

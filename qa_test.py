@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-QA Test Suite - Antigravity NetBeans Bridge Suite v1.2.0
+QA Test Suite - Antigravity NetBeans Bridge Suite v1.4.1
 Valida a integridade, compatibilidade de encoding, schemas MCP, JsonUtils e conectividade da Bridge Suite.
 """
 
@@ -63,7 +63,7 @@ class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
         self.assertTrue(jar_files, "JAR compilado ausente em target/ (build incompleto?)")
 
     def test_mcp_schemas_completeness(self):
-        """Valida que todos os 35 schemas MCP estão presentes e válidos."""
+        """Valida que todos os 38 schemas MCP estão presentes e válidos."""
         expected_tools = [
             "nb_status", "nb_open_file", "nb_get_buffer", "nb_edit_buffer",
             "nb_replace_lines", "nb_set_content", "nb_save_buffer", "nb_revert_buffer",
@@ -75,7 +75,9 @@ class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
             "nb_output_list_tabs", "nb_output_get_text", "nb_output_clear",
             "nb_diagnostics_get", "nb_ast_get_structure", "nb_goto_definition", "nb_find_usages",
             "nb_project_list", "nb_project_open", "nb_project_action",
-            "nb_invoke_action"
+            "nb_invoke_action",
+            "nb_create_folder", "nb_create_file",
+            "nb_form_inspect", "nb_form_set_property", "nb_form_create_blueprint"
         ]
 
         for tool in expected_tools:
@@ -116,7 +118,7 @@ class TestAntigravityNetBeansBridgeSuiteV120(unittest.TestCase):
 
 def run_qa():
     print("=" * 70)
-    print("    INICIANDO QA SUITE: ANTIGRAVITY NETBEANS BRIDGE SUITE v1.2.0")
+    print("    INICIANDO QA SUITE: ANTIGRAVITY NETBEANS BRIDGE SUITE v1.3.0")
     print("=" * 70)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAntigravityNetBeansBridgeSuiteV120)
     runner = unittest.TextTestRunner(verbosity=2)

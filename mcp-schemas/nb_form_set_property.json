@@ -1,0 +1,35 @@
+{
+  "name": "nb_form_set_property",
+  "description": "Modifica ou insere cirurgicamente uma propriedade em um componente do formulário .form do NetBeans sem corromper o XML.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "Caminho absoluto do arquivo .form ou .java"
+      },
+      "component": {
+        "type": "string",
+        "description": "Nome da variável do componente (ex: jButton_Fechar)"
+      },
+      "property": {
+        "type": "string",
+        "description": "Nome da propriedade (ex: text, toolTipText, enabled)"
+      },
+      "value": {
+        "type": "string",
+        "description": "Novo valor da propriedade"
+      },
+      "type": {
+        "type": "string",
+        "description": "Tipo Java da propriedade (opcional, inferido se omitido)"
+      }
+    },
+    "required": [
+      "file",
+      "component",
+      "property",
+      "value"
+    ]
+  }
+}
