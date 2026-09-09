@@ -163,6 +163,7 @@ public class FormEngineTest {
         Map<String, Object> txtProps = new LinkedHashMap<>();
         txtProps.put("columns", 30);
         txtNome.put("properties", txtProps);
+        txtNome.put("getter", true);
         contentChildren.add(txtNome);
         content.put("children", contentChildren);
         rootComps.add(content);
@@ -190,6 +191,94 @@ public class FormEngineTest {
         Assert.assertTrue(javaSource.contains("private void initComponents()"));
         Assert.assertTrue(javaSource.contains("public javax.swing.JTextField getJTextField_Nome()"));
         Assert.assertTrue(javaSource.contains("private javax.swing.JTextField jTextField_Nome;"));
+        // Sem "getter" no blueprint o container nao ganha getter, mesmo chamando jPanel_Content
+        Assert.assertFalse(javaSource.contains("getJPanel_Content()"));
+        // Sem "constructors" no blueprint sai o construtor do wizard do NetBeans, sem convencao de projeto
+        Assert.assertTrue(javaSource.contains("public OperadorTesteVW(java.awt.Frame parent, boolean modal)"));
+        Assert.assertFalse(javaSource.contains("ModalityType"));
+        Assert.assertFalse(javaSource.contains("public void init()"));
+    }
+
+    @Test
+    public void testBlueprintSemChavesExtrasSaiComoWizardDoNetBeans() throws Exception {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("packageName", "br.com.teste");
+        spec.put("className", "SimplesVW");
+        List<Map<String, Object>> comps = new ArrayList<>();
+        Map<String, Object> painel = new LinkedHashMap<>();
+        painel.put("name", "jPanel_Content");
+        painel.put("class", "javax.swing.JPanel");
+        List<Map<String, Object>> filhos = new ArrayList<>();
+        Map<String, Object> botao = new LinkedHashMap<>();
+        botao.put("name", "jButton_OK");
+        botao.put("class", "javax.swing.JButton");
+        filhos.add(botao);
+        painel.put("children", filhos);
+        comps.add(painel);
+        spec.put("components", comps);
+
+        String java = FormJavaGenerator.generateSource(spec);
+        Assert.assertTrue(java.contains("public SimplesVW(java.awt.Frame parent, boolean modal) {\n        super(parent, modal);\n        initComponents();\n    }"));
+        Assert.assertFalse(java.contains("import "));
+        Assert.assertFalse(java.contains("getJButton_OK"));
+        Assert.assertFalse(java.contains("editor-fold desc=\"M"));
+        Assert.assertFalse(java.contains("public void init()"));
+        // O bloco protegido e as declaracoes continuam iguais
+        Assert.assertTrue(java.contains("private void initComponents()"));
+        Assert.assertTrue(java.contains("private javax.swing.JButton jButton_OK;"));
+    }
+
+    @Test
+    public void testBlueprintDeclaraConstrutoresImportsInitEGetters() throws Exception {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("packageName", "br.com.teste");
+        spec.put("className", "DeclaradoVW");
+        List<String> imports = new ArrayList<>();
+        imports.add("java.awt.Window");
+        imports.add("java.awt.Dialog.ModalityType");
+        spec.put("imports", imports);
+        List<Map<String, Object>> ctors = new ArrayList<>();
+        Map<String, Object> c1 = new LinkedHashMap<>();
+        c1.put("params", "Window window, ModalityType modal");
+        c1.put("superArgs", "window, modal");
+        ctors.add(c1);
+        Map<String, Object> c2 = new LinkedHashMap<>();
+        c2.put("params", "java.awt.Frame parent, boolean modal");
+        c2.put("superArgs", "parent, modal");
+        ctors.add(c2);
+        spec.put("constructors", ctors);
+        spec.put("initMethod", "init");
+
+        List<Map<String, Object>> comps = new ArrayList<>();
+        Map<String, Object> painel = new LinkedHashMap<>();
+        painel.put("name", "jPanel_Content");
+        painel.put("class", "javax.swing.JPanel");
+        painel.put("getter", true);
+        List<Map<String, Object>> filhos = new ArrayList<>();
+        Map<String, Object> campo = new LinkedHashMap<>();
+        campo.put("name", "jTextField_Cod");
+        campo.put("class", "javax.swing.JTextField");
+        campo.put("getter", "getjTextField_Cod");
+        filhos.add(campo);
+        Map<String, Object> rotulo = new LinkedHashMap<>();
+        rotulo.put("name", "jLabel_Cod");
+        rotulo.put("class", "javax.swing.JLabel");
+        filhos.add(rotulo);
+        painel.put("children", filhos);
+        comps.add(painel);
+        spec.put("components", comps);
+
+        String java = FormJavaGenerator.generateSource(spec);
+        Assert.assertTrue(java.contains("import java.awt.Window;\nimport java.awt.Dialog.ModalityType;\n"));
+        Assert.assertTrue(java.contains("public DeclaradoVW(Window window, ModalityType modal) {\n        super(window, modal);\n        init();\n    }"));
+        Assert.assertTrue(java.contains("public DeclaradoVW(java.awt.Frame parent, boolean modal) {\n        super(parent, modal);\n        init();\n    }"));
+        Assert.assertTrue(java.contains("public void init() {\n        initComponents();\n    }"));
+        Assert.assertTrue(java.contains("public javax.swing.JPanel getJPanel_Content()"));
+        Assert.assertTrue(java.contains("public javax.swing.JTextField getjTextField_Cod()"));
+        Assert.assertFalse(java.contains("getJLabel_Cod"));
+        // Um unico editor-fold de getters, abrindo e fechando
+        Assert.assertEquals(1, java.split("//<editor-fold desc=", -1).length - 1);
+        Assert.assertEquals(1, java.split("//</editor-fold>", -1).length - 1);
     }
 
     @Test

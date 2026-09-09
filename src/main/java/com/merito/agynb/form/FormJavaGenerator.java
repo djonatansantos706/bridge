@@ -16,6 +16,22 @@ import java.util.Set;
  * Suporta setViewportView() para JScrollPane, addTab() para JTabbedPane,
  * setLeft/RightComponent() para JSplitPane, DefaultTableModel para JTable,
  * ButtonGroup para JRadioButton, e encoding windows-1252.
+ *
+ * O gerador não conhece convenção de projeto: sem chaves extras no blueprint,
+ * o .java sai como o wizard "New JDialog Form" do NetBeans gera (construtor
+ * padrão chamando initComponents(), sem getters). Quem tem convenção própria
+ * declara no blueprint:
+ * <pre>
+ *   "imports":      ["java.awt.Window", "java.awt.Dialog.ModalityType"],
+ *   "constructors": [{"params": "Window window, ModalityType modal", "superArgs": "window, modal"},
+ *                    {"params": "java.awt.Frame parent, boolean modal", "superArgs": "parent, modal"}],
+ *   "initMethod":   "init",
+ *   "components":   [{"name": "jTextField_Nome", "class": "javax.swing.JTextField",
+ *                     "getter": true}]           // ou "getter": "getjTextField_Nome"
+ * </pre>
+ * {@code getter: true} gera {@code getJTextField_Nome()} (JavaBean); string dá o nome exato.
+ * {@code initMethod} cria {@code public void <nome>() { initComponents(); }} e faz os
+ * construtores chamá-lo em vez de initComponents().
  */
 public class FormJavaGenerator {
 
@@ -27,6 +43,8 @@ public class FormJavaGenerator {
         String superClass = (String) spec.getOrDefault("superClass", "javax.swing.JDialog");
         String author = (String) spec.getOrDefault("author", "Antigravity Bridge Suite");
         String title = (String) spec.getOrDefault("title", "");
+        String initMethod = (String) spec.get("initMethod");
+        String initCall = (initMethod != null && !initMethod.trim().isEmpty()) ? initMethod.trim() + "();" : "initComponents();";
 
         List<ComponentDef> allComponents = new ArrayList<>();
         @SuppressWarnings("unchecked")
@@ -41,8 +59,15 @@ public class FormJavaGenerator {
 
         StringBuilder sb = new StringBuilder();
         sb.append("package ").append(packageName).append(";\n\n");
-        sb.append("import java.awt.Window;\n");
-        sb.append("import java.awt.Dialog.ModalityType;\n\n");
+
+        @SuppressWarnings("unchecked")
+        List<String> imports = (List<String>) spec.get("imports");
+        if (imports != null && !imports.isEmpty()) {
+            for (String imp : imports) {
+                sb.append("import ").append(imp).append(";\n");
+            }
+            sb.append("\n");
+        }
 
         sb.append("/**\n");
         sb.append(" * ").append(className).append("\n");
@@ -50,32 +75,50 @@ public class FormJavaGenerator {
         sb.append(" */\n");
         sb.append("public class ").append(className).append(" extends ").append(superClass).append(" {\n\n");
 
-        // Construtores padrao JPosto
-        sb.append("    public ").append(className).append("(Window window, ModalityType modal) {\n");
-        sb.append("        super(window, modal);\n");
-        sb.append("        init();\n");
-        sb.append("    }\n\n");
-
-        sb.append("    public ").append(className).append("(java.awt.Frame parent, boolean modal) {\n");
-        sb.append("        super(parent, modal);\n");
-        sb.append("        init();\n");
-        sb.append("    }\n\n");
-
-        sb.append("    public void init() {\n");
-        sb.append("        initComponents();\n");
-        sb.append("    }\n\n");
-
-        // Getters para padrao MVP
-        sb.append("    //<editor-fold desc=\"M\u00e9todos getters dos componentes\">\n");
-        for (ComponentDef c : allComponents) {
-            if (!c.className.endsWith("Separator") && (!c.isContainer || c.name.startsWith("jPanel_Content") || c.name.startsWith("jPanel_Aba") || c.className.endsWith("JTabbedPane"))) {
-                String getterName = "get" + Character.toUpperCase(c.name.charAt(0)) + c.name.substring(1);
-                sb.append("    public ").append(c.className).append(" ").append(getterName).append("() {\n");
-                sb.append("        return ").append(c.name).append(";\n");
-                sb.append("    }\n\n");
+        // Construtores: os declarados no blueprint, ou o padrao do wizard do NetBeans
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> constructors = (List<Map<String, Object>>) spec.get("constructors");
+        if (constructors == null || constructors.isEmpty()) {
+            constructors = new ArrayList<>();
+            Map<String, Object> def = new java.util.LinkedHashMap<>();
+            if (superClass.endsWith("JDialog")) {
+                def.put("params", "java.awt.Frame parent, boolean modal");
+                def.put("superArgs", "parent, modal");
             }
+            constructors.add(def);
         }
-        sb.append("    //</editor-fold>\n\n");
+        for (Map<String, Object> ctor : constructors) {
+            String params = ctor.get("params") == null ? "" : String.valueOf(ctor.get("params"));
+            String superArgs = ctor.get("superArgs") == null ? "" : String.valueOf(ctor.get("superArgs"));
+            sb.append("    public ").append(className).append("(").append(params).append(") {\n");
+            if (!superArgs.trim().isEmpty()) {
+                sb.append("        super(").append(superArgs).append(");\n");
+            }
+            sb.append("        ").append(initCall).append("\n");
+            sb.append("    }\n\n");
+        }
+
+        if (!"initComponents();".equals(initCall)) {
+            sb.append("    public void ").append(initMethod.trim()).append("() {\n");
+            sb.append("        initComponents();\n");
+            sb.append("    }\n\n");
+        }
+
+        // Getters: so para componentes que pedem ("getter": true | "nomeExato")
+        boolean algumGetter = false;
+        for (ComponentDef c : allComponents) {
+            if (c.getterName == null) continue;
+            if (!algumGetter) {
+                sb.append("    //<editor-fold desc=\"M\u00e9todos getters dos componentes\">\n");
+                algumGetter = true;
+            }
+            sb.append("    public ").append(c.className).append(" ").append(c.getterName).append("() {\n");
+            sb.append("        return ").append(c.name).append(";\n");
+            sb.append("    }\n\n");
+        }
+        if (algumGetter) {
+            sb.append("    //</editor-fold>\n\n");
+        }
 
         // Bloco protegido initComponents()
         sb.append("    @SuppressWarnings(\"unchecked\")\n");
@@ -346,12 +389,24 @@ public class FormJavaGenerator {
                 || clazz.endsWith("JSplitPane") 
                 || clazz.endsWith("JToolBar");
 
-        list.add(new ComponentDef(name, clazz, isContainer));
+        list.add(new ComponentDef(name, clazz, isContainer, resolveGetterName(name, comp.get("getter"))));
         if (children != null) {
             for (Map<String, Object> child : children) {
                 collectComponents(child, list);
             }
         }
+    }
+
+    /** "getter": true → JavaBean (getJTextField_Nome); string → nome exato; ausente/false → sem getter. */
+    static String resolveGetterName(String name, Object getter) {
+        if (getter == null || name == null || name.isEmpty()) return null;
+        if (getter instanceof Boolean) {
+            return ((Boolean) getter) ? "get" + Character.toUpperCase(name.charAt(0)) + name.substring(1) : null;
+        }
+        String s = String.valueOf(getter).trim();
+        if (s.isEmpty() || "false".equalsIgnoreCase(s)) return null;
+        if ("true".equalsIgnoreCase(s)) return "get" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        return s;
     }
 
     private static Set<String> collectButtonGroups(Map<String, Object> spec) {
@@ -398,11 +453,13 @@ public class FormJavaGenerator {
         final String name;
         final String className;
         final boolean isContainer;
+        final String getterName;
 
-        ComponentDef(String name, String className, boolean isContainer) {
+        ComponentDef(String name, String className, boolean isContainer, String getterName) {
             this.name = name;
             this.className = className;
             this.isContainer = isContainer;
+            this.getterName = getterName;
         }
     }
 }
