@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-QA Test Suite - Antigravity NetBeans Bridge Suite v1.4.1
+QA Test Suite - Antigravity NetBeans Bridge Suite v1.4.2
 Valida a integridade, compatibilidade de encoding, schemas MCP, JsonUtils e conectividade da Bridge Suite.
 """
 

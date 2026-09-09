@@ -179,7 +179,7 @@ public final class EditorHandlers {
             } else if (params.get("file") instanceof String) {
                 files.add((String) params.get("file"));
             }
-            String message = getStringParam(params, "message");
+            String message = getStringParam(params, "message", "msg", "commitMessage", "commit_message");
 
             NbCommitService.CommitResult res = NbCommitService.getInstance().openCommitDialog(files, message);
             return BridgeResponse.ok()

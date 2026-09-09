@@ -118,6 +118,18 @@ public class NbCommitService {
     }
 
     private void openSvnCommitDialog(List<File> files, String commitMessage, ClassLoader cl) throws Exception {
+        if (commitMessage != null && !commitMessage.isEmpty()) {
+            try {
+                Class<?> svnConfigClass = cl.loadClass("org.netbeans.modules.subversion.SvnModuleConfig");
+                Method getDefaultMethod = svnConfigClass.getMethod("getDefault");
+                Object svnConfig = getDefaultMethod.invoke(null);
+                Method setMsgMethod = svnConfigClass.getMethod("setLastCanceledCommitMessage", String.class);
+                setMsgMethod.invoke(svnConfig, commitMessage);
+            } catch (Throwable t) {
+                LOG.log(Level.FINE, "Não foi possível registrar mensagem prévia no SvnModuleConfig", t);
+            }
+        }
+
         File[] fileArray = files.toArray(new File[0]);
 
         Class<?> contextClass = cl.loadClass("org.netbeans.modules.subversion.util.Context");
@@ -127,9 +139,14 @@ public class NbCommitService {
         Class<?> commitActionClass = cl.loadClass("org.netbeans.modules.subversion.ui.commit.CommitAction");
         Method commitMethod = commitActionClass.getMethod("commit", String.class, contextClass, boolean.class);
 
+        // O primeiro argumento é o título do diálogo do NetBeans (ex: "Commit - <arquivo>"), NÃO a mensagem.
+        String titleParam = files.isEmpty() ? "" : files.get(0).getName();
+
+        scheduleCommitMessageInjection(commitMessage);
+
         SwingUtilities.invokeLater(() -> {
             try {
-                commitMethod.invoke(null, commitMessage != null ? commitMessage : "", svnContext, false);
+                commitMethod.invoke(null, titleParam, svnContext, false);
             } catch (Exception ex) {
                 LOG.log(Level.SEVERE, "[Antigravity] Erro ao invocar diálogo de commit do Subversion", ex);
             }
@@ -172,6 +189,8 @@ public class NbCommitService {
         Object gitCommitAction = gitCommitActionClass.getDeclaredConstructor().newInstance();
         Method performActionMethod = gitCommitActionClass.getMethod("performAction", vcsContextClass);
 
+        scheduleCommitMessageInjection(commitMessage);
+
         SwingUtilities.invokeLater(() -> {
             try {
                 performActionMethod.invoke(gitCommitAction, vcsContext);
@@ -179,5 +198,90 @@ public class NbCommitService {
                 LOG.log(Level.SEVERE, "[Antigravity] Erro ao invocar diálogo de commit do Git", ex);
             }
         });
+    }
+
+    /**
+     * Injeta ativamente a mensagem no JTextArea da janela de commit assim que o diálogo é exibido.
+     * Funciona tanto para Git quanto para Subversion mesmo se opções de templates estiverem ativas.
+     */
+    private void scheduleCommitMessageInjection(final String commitMessage) {
+        if (commitMessage == null || commitMessage.trim().isEmpty()) {
+            return;
+        }
+
+        final long deadline = System.currentTimeMillis() + 5000;
+        final javax.swing.Timer timer = new javax.swing.Timer(100, null);
+        timer.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (System.currentTimeMillis() > deadline) {
+                    timer.stop();
+                    return;
+                }
+                boolean injected = tryInjectMessage(commitMessage);
+                if (injected) {
+                    timer.stop();
+                }
+            }
+        });
+        timer.setRepeats(true);
+        timer.start();
+    }
+
+    private boolean tryInjectMessage(String commitMessage) {
+        java.awt.Window[] windows = java.awt.Window.getWindows();
+        if (windows == null) return false;
+
+        for (int i = windows.length - 1; i >= 0; i--) {
+            java.awt.Window w = windows[i];
+            if (!w.isShowing()) continue;
+
+            String title = "";
+            if (w instanceof java.awt.Dialog) {
+                title = ((java.awt.Dialog) w).getTitle();
+            } else if (w instanceof java.awt.Frame) {
+                title = ((java.awt.Frame) w).getTitle();
+            }
+
+            boolean isCommit = (title != null && title.toLowerCase().contains("commit"))
+                    || hasComponentWithClass(w, "CommitPanel");
+
+            if (isCommit) {
+                javax.swing.JTextArea txt = findFirstComponent(w, javax.swing.JTextArea.class);
+                if (txt != null) {
+                    txt.setText(commitMessage);
+                    txt.setCaretPosition(commitMessage.length());
+                    txt.requestFocusInWindow();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasComponentWithClass(java.awt.Component comp, String partialClassName) {
+        if (comp == null) return false;
+        if (comp.getClass().getName().contains(partialClassName)) return true;
+        if (comp instanceof java.awt.Container) {
+            for (java.awt.Component child : ((java.awt.Container) comp).getComponents()) {
+                if (hasComponentWithClass(child, partialClassName)) return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends java.awt.Component> T findFirstComponent(java.awt.Component comp, Class<T> targetClass) {
+        if (comp == null) return null;
+        if (targetClass.isInstance(comp)) {
+            return (T) comp;
+        }
+        if (comp instanceof java.awt.Container) {
+            for (java.awt.Component child : ((java.awt.Container) comp).getComponents()) {
+                T found = findFirstComponent(child, targetClass);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 }
