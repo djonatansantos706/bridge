@@ -264,7 +264,8 @@ public class FormXmlGenerator {
             for (Map.Entry<String, Object> entry : props.entrySet()) {
                 String pName = entry.getKey();
                 if ("buttonGroup".equals(pName) || "columns".equals(pName) || "items".equals(pName) 
-                        || "typeParameters".equals(pName) || "JavaCodeGenerator_TypeParameters".equals(pName)) {
+                        || "typeParameters".equals(pName) || "JavaCodeGenerator_TypeParameters".equals(pName)
+                        || "model".equals(pName)) {
                     continue; // Ja tratados
                 }
                 Object valObj = entry.getValue();
@@ -407,13 +408,17 @@ public class FormXmlGenerator {
     private static void appendComboListProperty(StringBuilder sb, String pName, String pType, String editor, List<String> items, String indent) {
         int count = items != null ? items.size() : 0;
         sb.append(indent).append("<Property name=\"").append(pName).append("\" type=\"").append(pType).append("\" editor=\"").append(editor).append("\">\n");
-        sb.append(indent).append("  <StringArray count=\"").append(count).append("\">\n");
-        if (items != null) {
-            for (int i = 0; i < items.size(); i++) {
-                sb.append(indent).append("    <StringItem index=\"").append(i).append("\" value=\"").append(escapeXml(items.get(i))).append("\"/>\n");
+        if (count == 0) {
+            sb.append(indent).append("  <StringArray count=\"0\"/>\n");
+        } else {
+            sb.append(indent).append("  <StringArray count=\"").append(count).append("\">\n");
+            if (items != null) {
+                for (int i = 0; i < items.size(); i++) {
+                    sb.append(indent).append("    <StringItem index=\"").append(i).append("\" value=\"").append(escapeXml(items.get(i))).append("\"/>\n");
+                }
             }
+            sb.append(indent).append("  </StringArray>\n");
         }
-        sb.append(indent).append("  </StringArray>\n");
         sb.append(indent).append("</Property>\n");
     }
 
