@@ -3,6 +3,7 @@ package com.merito.agynb.form;
 import com.merito.agynb.NbEditorService;
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,6 +90,8 @@ public class NbFormService {
 
     /**
      * Cria um formulário completo (.form + .java) a partir de um blueprint declarativo.
+     * Caso o formulário seja uma View (className terminando em VW), gera automaticamente
+     * o Presenter companheiro (PR) no padrão MVP.
      */
     public Map<String, Object> createBlueprint(String targetDir, String packageName, String className, Map<String, Object> blueprint) throws Exception {
         if (targetDir == null || targetDir.trim().isEmpty()) {
@@ -107,6 +110,17 @@ public class NbFormService {
         blueprint.put("packageName", packageName != null ? packageName : "");
         blueprint.put("className", className);
 
+        // Se for View (VW), garante getters em botões para o Presenter poder amarrar listeners
+        if (className.endsWith("VW")) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> comps = (List<Map<String, Object>>) blueprint.get("components");
+            if (comps != null) {
+                for (Map<String, Object> c : comps) {
+                    ensureButtonGetters(c);
+                }
+            }
+        }
+
         File formFile = new File(dir, className + ".form");
         File javaFile = new File(dir, className + ".java");
 
@@ -116,23 +130,55 @@ public class NbFormService {
         // 2. Gera e salva o .java em windows-1252
         FormJavaGenerator.writeSourceFile(blueprint, javaFile);
 
-        // 3. Atualiza cache do NetBeans
+        // 3. Se for uma View (VW), gera também o Presenter companheiro (PR) no padrão MVP
+        File prFile = null;
+        if (className.endsWith("VW")) {
+            String prName = className.substring(0, className.length() - 2) + "PR";
+            prFile = new File(dir, prName + ".java");
+            FormPresenterGenerator.writeSourceFile(blueprint, prFile, prName, className, packageName != null ? packageName : "");
+            refreshNetBeansFile(prFile);
+        }
+
+        // 4. Atualiza cache do NetBeans
         refreshNetBeansFile(formFile);
         refreshNetBeansFile(javaFile);
 
-        // 4. Abre o .java no editor do NetBeans
+        // 5. Abre o .java e o Presenter no editor do NetBeans
         try {
             NbEditorService.getInstance().openFileAtLine(javaFile.getAbsolutePath(), 1);
+            if (prFile != null && prFile.exists()) {
+                NbEditorService.getInstance().openFileAtLine(prFile.getAbsolutePath(), 1);
+            }
         } catch (Throwable t) {
             LOG.log(Level.FINE, "Não foi possível abrir o arquivo automaticamente no editor", t);
         }
 
         Map<String, Object> result = new HashMap<>();
         result.put("ok", true);
-        result.put("message", "Tela " + className + " (.form e .java) gerada com sucesso.");
+        result.put("message", "Tela " + className + " gerada com sucesso" + (prFile != null ? " com Presenter companheiro (" + prFile.getName() + ")." : "."));
         result.put("formPath", formFile.getAbsolutePath());
         result.put("javaPath", javaFile.getAbsolutePath());
+        if (prFile != null) {
+            result.put("presenterPath", prFile.getAbsolutePath());
+        }
         return result;
+    }
+
+    private void ensureButtonGetters(Map<String, Object> comp) {
+        String name = (String) comp.get("name");
+        String clazz = (String) comp.get("class");
+        if (name != null && ((clazz != null && clazz.endsWith("JButton")) || name.startsWith("jButton_") || name.startsWith("btn"))) {
+            if (!comp.containsKey("getter")) {
+                comp.put("getter", true);
+            }
+        }
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> children = (List<Map<String, Object>>) comp.get("children");
+        if (children != null) {
+            for (Map<String, Object> child : children) {
+                ensureButtonGetters(child);
+            }
+        }
     }
 
     private File resolveFormFile(String path) {

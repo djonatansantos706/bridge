@@ -20,6 +20,28 @@ import java.util.Set;
  */
 public class FormXmlGenerator {
 
+    private static String serializeDimension(int width, int height) {
+        byte[] hBytes = java.nio.ByteBuffer.allocate(4).putInt(height).array();
+        byte[] wBytes = java.nio.ByteBuffer.allocate(4).putInt(width).array();
+        int[] prefix = new int[]{
+            -84, -19, 0, 5, 115, 114, 0, 18, 106, 97, 118, 97, 46, 97, 119, 116, 46, 68, 105, 109,
+            101, 110, 115, 105, 111, 110, 65, -114, -39, -41, -84, 95, 68, 20, 2, 0, 2, 73, 0, 6,
+            104, 101, 105, 103, 104, 116, 73, 0, 5, 119, 105, 100, 116, 104, 120, 112
+        };
+        StringBuilder sb = new StringBuilder();
+        for (int b : prefix) {
+            sb.append(b).append(",");
+        }
+        for (byte b : hBytes) {
+            sb.append((int) b).append(",");
+        }
+        for (int i = 0; i < wBytes.length; i++) {
+            sb.append((int) wBytes[i]);
+            if (i < wBytes.length - 1) sb.append(",");
+        }
+        return sb.toString();
+    }
+
     public static String generateXml(Map<String, Object> spec) {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n\n");
@@ -51,9 +73,20 @@ public class FormXmlGenerator {
         sb.append("  </Properties>\n");
 
         // 3. SyntheticProperties
+        boolean pack = Boolean.TRUE.equals(spec.get("pack"));
         sb.append("  <SyntheticProperties>\n");
-        sb.append("    <SyntheticProperty name=\"formSizePolicy\" type=\"int\" value=\"1\"/>\n");
-        sb.append("    <SyntheticProperty name=\"generateCenter\" type=\"boolean\" value=\"true\"/>\n");
+        if (pack) {
+            sb.append("    <SyntheticProperty name=\"formSizePolicy\" type=\"int\" value=\"1\"/>\n");
+            sb.append("    <SyntheticProperty name=\"generateCenter\" type=\"boolean\" value=\"true\"/>\n");
+        } else {
+            int width = spec.containsKey("width") ? ((Number) spec.get("width")).intValue() : 800;
+            int height = spec.containsKey("height") ? ((Number) spec.get("height")).intValue() : 600;
+            String dimValue = serializeDimension(width, height);
+            sb.append("    <SyntheticProperty name=\"formSize\" type=\"java.awt.Dimension\" value=\"").append(dimValue).append("\"/>\n");
+            sb.append("    <SyntheticProperty name=\"formSizePolicy\" type=\"int\" value=\"0\"/>\n");
+            sb.append("    <SyntheticProperty name=\"generateSize\" type=\"boolean\" value=\"true\"/>\n");
+            sb.append("    <SyntheticProperty name=\"generateCenter\" type=\"boolean\" value=\"true\"/>\n");
+        }
         sb.append("  </SyntheticProperties>\n");
 
         // 4. AuxValues padrao Matisse
@@ -118,10 +151,28 @@ public class FormXmlGenerator {
         sb.append(indent).append("<").append(tag).append(" class=\"").append(normClazz)
           .append("\" name=\"").append(name).append("\">\n");
 
-        // AuxValue autoScrollPane
-        if (clazz.endsWith("JScrollPane")) {
+        // AuxValues (autoScrollPane, JavaCodeGenerator_TypeParameters)
+        boolean hasAutoScrollPane = clazz.endsWith("JScrollPane");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> props = (Map<String, Object>) comp.get("properties");
+        Object typeParamObj = comp.containsKey("typeParameters") ? comp.get("typeParameters") : 
+                (props != null ? props.get("typeParameters") : null);
+        if (typeParamObj == null) {
+            typeParamObj = comp.containsKey("JavaCodeGenerator_TypeParameters") ? comp.get("JavaCodeGenerator_TypeParameters") : 
+                    (props != null ? props.get("JavaCodeGenerator_TypeParameters") : null);
+        }
+        boolean hasTypeParams = typeParamObj != null && !String.valueOf(typeParamObj).trim().isEmpty();
+
+        if (hasAutoScrollPane || hasTypeParams) {
             sb.append(indent).append("  <AuxValues>\n");
-            sb.append(indent).append("    <AuxValue name=\"autoScrollPane\" type=\"java.lang.Boolean\" value=\"true\"/>\n");
+            if (hasAutoScrollPane) {
+                sb.append(indent).append("    <AuxValue name=\"autoScrollPane\" type=\"java.lang.Boolean\" value=\"true\"/>\n");
+            }
+            if (hasTypeParams) {
+                String tp = String.valueOf(typeParamObj).trim();
+                sb.append(indent).append("    <AuxValue name=\"JavaCodeGenerator_TypeParameters\" type=\"java.lang.String\" value=\"")
+                  .append(escapeXml(tp)).append("\"/>\n");
+            }
             sb.append(indent).append("  </AuxValues>\n");
         }
 
@@ -155,7 +206,7 @@ public class FormXmlGenerator {
         // Check if there are any special models or properties to output
         boolean hasProps = props != null && !props.isEmpty();
         boolean hasButtonGroup = comp.containsKey("buttonGroup") || (props != null && props.containsKey("buttonGroup"));
-        boolean hasTableColumns = clazz != null && clazz.endsWith("JTable") && (comp.containsKey("columns") || (props != null && props.containsKey("columns")));
+        boolean hasTableColumns = clazz != null && clazz.endsWith("JTable");
         boolean hasComboItems = clazz != null && clazz.endsWith("JComboBox") && (comp.containsKey("items") || (props != null && props.containsKey("items")));
         boolean hasListItems = clazz != null && clazz.endsWith("JList") && (comp.containsKey("items") || (props != null && props.containsKey("items")));
         boolean hasSpinner = clazz != null && clazz.endsWith("JSpinner") && (comp.containsKey("spinnerModel") || comp.containsKey("min") || comp.containsKey("max"));
@@ -177,7 +228,8 @@ public class FormXmlGenerator {
         // 2. TableModel (JTable)
         if (hasTableColumns) {
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> columns = (List<Map<String, Object>>) (comp.containsKey("columns") ? comp.get("columns") : props.get("columns"));
+            List<Map<String, Object>> columns = (List<Map<String, Object>>) (comp.containsKey("columns") ? comp.get("columns") : 
+                    (props != null ? props.get("columns") : null));
             appendTableProperty(sb, columns, indent + "  ");
         }
 
@@ -211,7 +263,8 @@ public class FormXmlGenerator {
         if (props != null) {
             for (Map.Entry<String, Object> entry : props.entrySet()) {
                 String pName = entry.getKey();
-                if ("buttonGroup".equals(pName) || "columns".equals(pName) || "items".equals(pName)) {
+                if ("buttonGroup".equals(pName) || "columns".equals(pName) || "items".equals(pName) 
+                        || "typeParameters".equals(pName) || "JavaCodeGenerator_TypeParameters".equals(pName)) {
                     continue; // Ja tratados
                 }
                 Object valObj = entry.getValue();
@@ -225,6 +278,36 @@ public class FormXmlGenerator {
     private static void appendRichProperty(StringBuilder sb, String pName, Object valObj, String indent) {
         String val = String.valueOf(valObj);
 
+        // Icon
+        if (pName.toLowerCase().endsWith("icon")) {
+            sb.append(indent).append("<Property name=\"").append(pName).append("\" type=\"javax.swing.Icon\" editor=\"org.netbeans.modules.form.editors2.IconEditor\">\n");
+            sb.append(indent).append("  <Image iconType=\"3\" name=\"").append(escapeXml(val)).append("\"/>\n");
+            sb.append(indent).append("</Property>\n");
+            return;
+        }
+
+        // Margin / Insets
+        if ("margin".equalsIgnoreCase(pName) || pName.toLowerCase().endsWith("insets")) {
+            String insetValue = val.trim();
+            if (!insetValue.startsWith("[")) {
+                insetValue = "[" + insetValue + "]";
+            }
+            sb.append(indent).append("<Property name=\"").append(pName).append("\" type=\"java.awt.Insets\" editor=\"org.netbeans.beaninfo.editors.InsetsEditor\">\n");
+            sb.append(indent).append("  <Insets value=\"").append(escapeXml(insetValue)).append("\"/>\n");
+            sb.append(indent).append("</Property>\n");
+            return;
+        }
+
+        // Float Alignments
+        if ("alignmentY".equalsIgnoreCase(pName) || "alignmentX".equalsIgnoreCase(pName)) {
+            float fVal = 0.0f;
+            try {
+                fVal = Float.parseFloat(val);
+            } catch (Exception ignored) {}
+            sb.append(indent).append("<Property name=\"").append(pName).append("\" type=\"float\" value=\"").append(fVal).append("\"/>\n");
+            return;
+        }
+
         // Border
         if ("border".equalsIgnoreCase(pName)) {
             if (val.toLowerCase().contains("titled")) {
@@ -237,13 +320,20 @@ public class FormXmlGenerator {
             } else if (val.toLowerCase().contains("etched")) {
                 sb.append(indent).append("<Property name=\"border\" type=\"javax.swing.border.Border\" editor=\"org.netbeans.modules.form.editors2.BorderEditor\">\n");
                 sb.append(indent).append("  <Border info=\"org.netbeans.modules.form.compat2.border.EtchedBorderInfo\">\n");
-                sb.append(indent).append("    <EtchetBorder/>\n");
+                sb.append(indent).append("    <EtchedBorder/>\n");
                 sb.append(indent).append("  </Border>\n");
                 sb.append(indent).append("</Property>\n");
             } else if (val.toLowerCase().contains("bevel")) {
+                int type = val.toLowerCase().contains("lowered") ? 1 : 0;
                 sb.append(indent).append("<Property name=\"border\" type=\"javax.swing.border.Border\" editor=\"org.netbeans.modules.form.editors2.BorderEditor\">\n");
                 sb.append(indent).append("  <Border info=\"org.netbeans.modules.form.compat2.border.BevelBorderInfo\">\n");
-                sb.append(indent).append("    <BevelBorder bevelType=\"1\"/>\n");
+                sb.append(indent).append("    <BevelBorder bevelType=\"").append(type).append("\"/>\n");
+                sb.append(indent).append("  </Border>\n");
+                sb.append(indent).append("</Property>\n");
+            } else if (val.toLowerCase().contains("line")) {
+                sb.append(indent).append("<Property name=\"border\" type=\"javax.swing.border.Border\" editor=\"org.netbeans.modules.form.editors2.BorderEditor\">\n");
+                sb.append(indent).append("  <Border info=\"org.netbeans.modules.form.compat2.border.LineBorderInfo\">\n");
+                sb.append(indent).append("    <LineBorder/>\n");
                 sb.append(indent).append("  </Border>\n");
                 sb.append(indent).append("</Property>\n");
             }
@@ -295,7 +385,7 @@ public class FormXmlGenerator {
     }
 
     private static void appendTableProperty(StringBuilder sb, List<Map<String, Object>> columns, String indent) {
-        int count = columns != null ? columns.size() : 4;
+        int count = columns != null ? columns.size() : 0;
         sb.append(indent).append("<Property name=\"model\" type=\"javax.swing.table.TableModel\" editor=\"org.netbeans.modules.form.editors2.TableModelEditor\">\n");
         sb.append(indent).append("  <Table columnCount=\"").append(count).append("\" rowCount=\"0\">\n");
         if (columns != null) {
@@ -308,6 +398,9 @@ public class FormXmlGenerator {
             }
         }
         sb.append(indent).append("  </Table>\n");
+        sb.append(indent).append("</Property>\n");
+        sb.append(indent).append("<Property name=\"tableHeader\" type=\"javax.swing.table.JTableHeader\" editor=\"org.netbeans.modules.form.editors2.JTableHeaderEditor\">\n");
+        sb.append(indent).append("  <TableHeader reorderingAllowed=\"true\" resizingAllowed=\"true\"/>\n");
         sb.append(indent).append("</Property>\n");
     }
 

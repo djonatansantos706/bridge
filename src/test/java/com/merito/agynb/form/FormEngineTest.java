@@ -430,4 +430,93 @@ public class FormEngineTest {
         Assert.assertTrue(java.contains("new javax.swing.table.DefaultTableModel"));
     }
 
+    @Test
+    public void testFormXmlDefaultDimensions800x600AndMatisseProperties() throws Exception {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("className", "TesteMatisseVW");
+
+        List<Map<String, Object>> comps = new ArrayList<>();
+        Map<String, Object> btn = new LinkedHashMap<>();
+        btn.put("name", "jButton_OK");
+        btn.put("class", "javax.swing.JButton");
+
+        Map<String, Object> props = new LinkedHashMap<>();
+        props.put("icon", "/base/img/btn/IncAlt.gif");
+        props.put("margin", "2, 14, 2, 14");
+        props.put("alignmentY", 0.5f);
+        props.put("border", "etched");
+        btn.put("properties", props);
+        comps.add(btn);
+
+        Map<String, Object> combo = new LinkedHashMap<>();
+        combo.put("name", "jComboBox_Tipo");
+        combo.put("class", "javax.swing.JComboBox");
+        combo.put("typeParameters", "<String>");
+        comps.add(combo);
+
+        spec.put("components", comps);
+
+        String xml = FormXmlGenerator.generateXml(spec);
+
+        // Verifica dimensoes 800x600 e formSizePolicy=0
+        Assert.assertTrue(xml.contains("formSizePolicy\" type=\"int\" value=\"0\""));
+        Assert.assertTrue(xml.contains("name=\"generateSize\" type=\"boolean\" value=\"true\""));
+        Assert.assertTrue(xml.contains("name=\"generateCenter\" type=\"boolean\" value=\"true\""));
+        Assert.assertTrue(xml.contains("name=\"formSize\" type=\"java.awt.Dimension\""));
+
+        // Verifica IconEditor
+        Assert.assertTrue(xml.contains("editor=\"org.netbeans.modules.form.editors2.IconEditor\""));
+        Assert.assertTrue(xml.contains("<Image iconType=\"3\" name=\"/base/img/btn/IncAlt.gif\"/>"));
+
+        // Verifica InsetsEditor
+        Assert.assertTrue(xml.contains("editor=\"org.netbeans.beaninfo.editors.InsetsEditor\""));
+        Assert.assertTrue(xml.contains("<Insets value=\"[2, 14, 2, 14]\"/>"));
+
+        // Verifica float alignment
+        Assert.assertTrue(xml.contains("type=\"float\" value=\"0.5\""));
+
+        // Verifica EtchedBorder
+        Assert.assertTrue(xml.contains("<EtchedBorder/>"));
+        Assert.assertFalse(xml.contains("EtchetBorder"));
+
+        // Verifica AuxValue para typeParameters
+        Assert.assertTrue(xml.contains("<AuxValue name=\"JavaCodeGenerator_TypeParameters\" type=\"java.lang.String\" value=\"&lt;String&gt;\"/>"));
+        Assert.assertFalse(xml.contains("<Property name=\"typeParameters\""));
+    }
+
+    @Test
+    public void testFormPresenterGenerator() throws Exception {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("packageName", "br.com.merito.teste");
+
+        List<Map<String, Object>> comps = new ArrayList<>();
+        Map<String, Object> btnFechar = new LinkedHashMap<>();
+        btnFechar.put("name", "jButton_Fechar");
+        btnFechar.put("class", "javax.swing.JButton");
+        comps.add(btnFechar);
+
+        Map<String, Object> btnSalvar = new LinkedHashMap<>();
+        btnSalvar.put("name", "jButton_OK");
+        btnSalvar.put("class", "javax.swing.JButton");
+        comps.add(btnSalvar);
+
+        spec.put("components", comps);
+
+        String prSource = FormPresenterGenerator.generateSource(spec, "TestePR", "TesteVW", "br.com.merito.teste");
+        Assert.assertNotNull(prSource);
+        Assert.assertTrue(prSource.contains("package br.com.merito.teste;"));
+        Assert.assertTrue(prSource.contains("public class TestePR implements Presenter"));
+        Assert.assertTrue(prSource.contains("public TestePR(Window window, Dialog.ModalityType modal)"));
+        Assert.assertTrue(prSource.contains("public TestePR(Frame parent, boolean modal)"));
+        Assert.assertTrue(prSource.contains("public final void init()"));
+        Assert.assertTrue(prSource.contains("public void initEvents()"));
+        Assert.assertTrue(prSource.contains("view.getJButton_Fechar().addActionListener(e -> fechar());"));
+        Assert.assertTrue(prSource.contains("view.getJButton_OK().addActionListener(e -> salvar());"));
+        Assert.assertTrue(prSource.contains("private void salvar()"));
+        Assert.assertTrue(prSource.contains("private void excluir()"));
+        Assert.assertTrue(prSource.contains("public void fechar()"));
+        Assert.assertTrue(prSource.contains("public void setVisible(boolean mostrar)"));
+        Assert.assertTrue(prSource.contains("public TesteVW getView()"));
+    }
+
 }
