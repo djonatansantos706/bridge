@@ -1,6 +1,6 @@
 {
   "name": "nb_create_file",
-  "description": "Cria um novo arquivo (.java, .xml, etc.) com encoding apropriado (padrão windows-1252 para Java), sincroniza com NetBeans e abre no editor.",
+  "description": "Cria um novo arquivo (.java, .xml, etc.) com encoding do projeto NetBeans para .java (source.encoding; default windows-1252) e utf-8 para os demais, sincroniza com NetBeans e abre no editor.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -14,7 +14,7 @@
       },
       "encoding": {
         "type": "string",
-        "description": "Encoding do arquivo (opcional, padrão windows-1252 para .java, utf-8 para outros)"
+        "description": "Encoding do arquivo. Omitido: .java usa source.encoding do projeto (default windows-1252); outros arquivos utf-8."
       },
       "open_in_editor": {
         "type": "boolean",

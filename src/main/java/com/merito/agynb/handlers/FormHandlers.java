@@ -50,7 +50,8 @@ public final class FormHandlers {
                 blueprint = params;
             }
 
-            Map<String, Object> res = NbFormService.getInstance().createBlueprint(targetDir, packageName, className, blueprint);
+            String encoding = getStringParam(params, "encoding");
+            Map<String, Object> res = NbFormService.getInstance().createBlueprint(targetDir, packageName, className, blueprint, encoding);
             return BridgeResponse.of(res);
         }
     }
