@@ -15,7 +15,8 @@ import java.util.Set;
  * Gerador de código Java (.java) para companheiro de .form do NetBeans Matisse.
  * Suporta setViewportView() para JScrollPane, addTab() para JTabbedPane,
  * setLeft/RightComponent() para JSplitPane, DefaultTableModel para JTable,
- * ButtonGroup para JRadioButton, e encoding windows-1252.
+ * ButtonGroup para JRadioButton. Encoding do .java é o do projeto
+ * (source.encoding); default windows-1252 se o caller não informar.
  *
  * O gerador não conhece convenção de projeto: sem chaves extras no blueprint,
  * o .java sai como o wizard "New JDialog Form" do NetBeans gera (construtor
@@ -169,9 +170,16 @@ public class FormJavaGenerator {
     }
 
     public static void writeSourceFile(Map<String, Object> spec, File targetFile) throws Exception {
+        writeSourceFile(spec, targetFile, ENCODING_WINDOWS_1252);
+    }
+
+    public static void writeSourceFile(Map<String, Object> spec, File targetFile, Charset charset) throws Exception {
+        if (charset == null) {
+            charset = ENCODING_WINDOWS_1252;
+        }
         String code = generateSource(spec);
         try (OutputStream out = new FileOutputStream(targetFile);
-             OutputStreamWriter writer = new OutputStreamWriter(out, ENCODING_WINDOWS_1252)) {
+             OutputStreamWriter writer = new OutputStreamWriter(out, charset)) {
             writer.write(code);
         }
     }

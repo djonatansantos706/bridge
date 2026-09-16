@@ -113,13 +113,13 @@ TOOLS = [
     },
     {
         "name": "nb_create_file",
-        "description": "Cria um novo arquivo (.java, .xml, etc.) com encoding apropriado (padrão windows-1252 para Java), sincroniza com NetBeans e abre no editor.",
+        "description": "Cria um novo arquivo (.java, .xml, etc.) com encoding do projeto NetBeans para .java (source.encoding; default windows-1252) e utf-8 para os demais, sincroniza com NetBeans e abre no editor.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "path": {"type": "string", "description": "Caminho absoluto do arquivo a criar"},
                 "content": {"type": "string", "description": "Conteúdo inicial do arquivo (opcional)"},
-                "encoding": {"type": "string", "description": "Encoding do arquivo (opcional, padrão windows-1252 para .java, utf-8 para outros)"},
+                "encoding": {"type": "string", "description": "Encoding do arquivo. Omitido: .java usa source.encoding do projeto (default windows-1252); outros arquivos utf-8."},
                 "open_in_editor": {"type": "boolean", "description": "Se deve abrir o arquivo no editor do NetBeans (padrão true)"},
                 "line": {"type": "integer", "description": "Linha para posicionar o cursor (padrão 1)"}
             },
@@ -493,14 +493,15 @@ TOOLS = [
     },
     {
         "name": "nb_form_create_blueprint",
-        "description": "Cria um formulário Swing completo (.form e .java companheiro) a partir de um blueprint declarativo (árvore de componentes), com suporte ao padrão MVP e encoding windows-1252.",
+        "description": "Cria um formulário Swing completo (.form UTF-8 e .java companheiro) a partir de um blueprint declarativo. O .java usa o encoding do projeto NetBeans (source.encoding); informe encoding para forçar, senão lê nbproject/project.properties (default windows-1252).",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "target_dir": {"type": "string", "description": "Diretório de destino para gravar os arquivos"},
                 "package_name": {"type": "string", "description": "Nome do pacote Java (ex: br.com.tef.netunna)"},
                 "class_name": {"type": "string", "description": "Nome da classe (ex: OperadorVW)"},
-                "blueprint": {"type": "object", "description": "Especificação da árvore de componentes e layouts em JSON"}
+                "blueprint": {"type": "object", "description": "Especificação da árvore de componentes e layouts em JSON"},
+                "encoding": {"type": "string", "description": "Encoding do .java e do Presenter (UTF-8, windows-1252, ISO-8859-1). Omitido: source.encoding do projeto; sem projeto: windows-1252. O .form é sempre UTF-8."}
             },
             "required": ["target_dir", "package_name", "class_name", "blueprint"]
         }
