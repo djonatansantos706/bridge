@@ -2,6 +2,7 @@ package com.merito.agynb.form;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -517,6 +518,50 @@ public class FormEngineTest {
         Assert.assertTrue(prSource.contains("public void fechar()"));
         Assert.assertTrue(prSource.contains("public void setVisible(boolean mostrar)"));
         Assert.assertTrue(prSource.contains("public TesteVW getView()"));
+    }
+
+    @Test
+    public void testWriteJavaRespeitaEncodingDoProjeto() throws Exception {
+        Map<String, Object> spec = new LinkedHashMap<>();
+        spec.put("packageName", "com.core.gui");
+        spec.put("className", "RequisicaoVW");
+        spec.put("title", "Requisição de Materiais");
+        spec.put("components", new ArrayList<>());
+
+        File dir = Files.createTempDirectory("form-enc").toFile();
+        dir.deleteOnExit();
+
+        File javaUtf8 = new File(dir, "utf8.java");
+        FormJavaGenerator.writeSourceFile(spec, javaUtf8, StandardCharsets.UTF_8);
+        byte[] utf8 = Files.readAllBytes(javaUtf8.toPath());
+        Assert.assertTrue(containsBytes(utf8, "ç".getBytes(StandardCharsets.UTF_8)));
+        Assert.assertTrue(new String(utf8, StandardCharsets.UTF_8).contains("Requisição"));
+
+        File java1252 = new File(dir, "cp1252.java");
+        FormJavaGenerator.writeSourceFile(spec, java1252, Charset.forName("windows-1252"));
+        byte[] cp = Files.readAllBytes(java1252.toPath());
+        Assert.assertTrue(containsBytes(cp, "ç".getBytes(Charset.forName("windows-1252"))));
+        Assert.assertFalse(containsBytes(cp, "ç".getBytes(StandardCharsets.UTF_8)));
+
+        File form = new File(dir, "tela.form");
+        FormXmlGenerator.writeFormFile(spec, form);
+        String xml = new String(Files.readAllBytes(form.toPath()), StandardCharsets.UTF_8);
+        Assert.assertTrue(xml.contains("Requisição"));
+        Assert.assertFalse(xml.contains("u005c"));
+        Assert.assertFalse(xml.contains("containsInvalidXMLChars"));
+    }
+
+    private static boolean containsBytes(byte[] hay, byte[] needle) {
+        outer:
+        for (int i = 0; i <= hay.length - needle.length; i++) {
+            for (int j = 0; j < needle.length; j++) {
+                if (hay[i + j] != needle[j]) {
+                    continue outer;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
 }

@@ -1,7 +1,9 @@
 package com.merito.agynb.form;
 
 import com.merito.agynb.NbEditorService;
+import com.merito.agynb.core.SourceEncoding;
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +96,10 @@ public class NbFormService {
      * o Presenter companheiro (PR) no padrão MVP.
      */
     public Map<String, Object> createBlueprint(String targetDir, String packageName, String className, Map<String, Object> blueprint) throws Exception {
+        return createBlueprint(targetDir, packageName, className, blueprint, null);
+    }
+
+    public Map<String, Object> createBlueprint(String targetDir, String packageName, String className, Map<String, Object> blueprint, String encoding) throws Exception {
         if (targetDir == null || targetDir.trim().isEmpty()) {
             throw new IllegalArgumentException("Parâmetro 'targetDir' é obrigatório.");
         }
@@ -105,6 +111,7 @@ public class NbFormService {
         if (!dir.exists()) {
             dir.mkdirs();
         }
+        Charset javaCharset = SourceEncoding.resolve(encoding, dir);
 
         // Preenche metadados no blueprint
         blueprint.put("packageName", packageName != null ? packageName : "");
@@ -124,18 +131,18 @@ public class NbFormService {
         File formFile = new File(dir, className + ".form");
         File javaFile = new File(dir, className + ".java");
 
-        // 1. Gera e salva o .form
+        // 1. Gera e salva o .form (XML Matisse é sempre UTF-8)
         FormXmlGenerator.writeFormFile(blueprint, formFile);
 
-        // 2. Gera e salva o .java em windows-1252
-        FormJavaGenerator.writeSourceFile(blueprint, javaFile);
+        // 2. Gera e salva o .java no encoding do projeto (não um default da casa)
+        FormJavaGenerator.writeSourceFile(blueprint, javaFile, javaCharset);
 
         // 3. Se for uma View (VW), gera também o Presenter companheiro (PR) no padrão MVP
         File prFile = null;
         if (className.endsWith("VW")) {
             String prName = className.substring(0, className.length() - 2) + "PR";
             prFile = new File(dir, prName + ".java");
-            FormPresenterGenerator.writeSourceFile(blueprint, prFile, prName, className, packageName != null ? packageName : "");
+            FormPresenterGenerator.writeSourceFile(blueprint, prFile, prName, className, packageName != null ? packageName : "", javaCharset);
             refreshNetBeansFile(prFile);
         }
 
@@ -158,6 +165,7 @@ public class NbFormService {
         result.put("message", "Tela " + className + " gerada com sucesso" + (prFile != null ? " com Presenter companheiro (" + prFile.getName() + ")." : "."));
         result.put("formPath", formFile.getAbsolutePath());
         result.put("javaPath", javaFile.getAbsolutePath());
+        result.put("encoding", javaCharset.name());
         if (prFile != null) {
             result.put("presenterPath", prFile.getAbsolutePath());
         }

@@ -1,6 +1,6 @@
 {
   "name": "nb_form_create_blueprint",
-  "description": "Cria um formulário Swing completo (.form e .java companheiro) a partir de um blueprint declarativo (árvore de componentes), com suporte ao padrão MVP e encoding windows-1252.",
+  "description": "Cria um formulário Swing completo (.form UTF-8 e .java companheiro) a partir de um blueprint declarativo. O .java usa o encoding do projeto NetBeans (source.encoding); informe encoding para forçar, senão lê nbproject/project.properties (default windows-1252).",
   "parameters": {
     "type": "object",
     "properties": {
@@ -19,6 +19,10 @@
       "blueprint": {
         "type": "object",
         "description": "Especificação da árvore de componentes e layouts em JSON"
+      },
+      "encoding": {
+        "type": "string",
+        "description": "Encoding do .java e do Presenter (UTF-8, windows-1252, ISO-8859-1). Omitido: source.encoding do projeto; sem projeto: windows-1252. O .form é sempre UTF-8."
       }
     },
     "required": [

@@ -237,10 +237,11 @@ public final class EditorHandlers {
 
             String encodingName = getStringParam(params, "encoding");
             java.nio.charset.Charset charset;
+            java.io.File file = new java.io.File(path);
             if (encodingName != null && !encodingName.trim().isEmpty()) {
-                charset = java.nio.charset.Charset.forName(encodingName);
+                charset = com.merito.agynb.core.SourceEncoding.charsetOf(encodingName);
             } else if (path.endsWith(".java")) {
-                charset = java.nio.charset.Charset.forName("windows-1252");
+                charset = com.merito.agynb.core.SourceEncoding.resolve(null, file.getParentFile());
             } else {
                 charset = java.nio.charset.StandardCharsets.UTF_8;
             }
@@ -248,7 +249,6 @@ public final class EditorHandlers {
             boolean openInEditor = getBoolParam(params, true, "open_in_editor", "open");
             int line = getIntParam(params, 1, "line");
 
-            java.io.File file = new java.io.File(path);
             java.io.File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();

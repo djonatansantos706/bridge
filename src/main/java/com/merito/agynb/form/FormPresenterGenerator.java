@@ -121,9 +121,16 @@ public class FormPresenterGenerator {
     }
 
     public static void writeSourceFile(Map<String, Object> spec, File targetFile, String prName, String vwName, String packageName) throws Exception {
+        writeSourceFile(spec, targetFile, prName, vwName, packageName, ENCODING_WINDOWS_1252);
+    }
+
+    public static void writeSourceFile(Map<String, Object> spec, File targetFile, String prName, String vwName, String packageName, Charset charset) throws Exception {
+        if (charset == null) {
+            charset = ENCODING_WINDOWS_1252;
+        }
         String code = generateSource(spec, prName, vwName, packageName);
         try (OutputStream out = new FileOutputStream(targetFile);
-             OutputStreamWriter writer = new OutputStreamWriter(out, ENCODING_WINDOWS_1252)) {
+             OutputStreamWriter writer = new OutputStreamWriter(out, charset)) {
             writer.write(code);
         }
     }
