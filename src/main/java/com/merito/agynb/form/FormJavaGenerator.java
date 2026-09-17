@@ -221,6 +221,8 @@ public class FormJavaGenerator {
                     sb.append("        ").append(name).append(".setRollover(").append(v).append(");\n");
                 } else if ("focusable".equals(p)) {
                     sb.append("        ").append(name).append(".setFocusable(").append(v).append(");\n");
+                } else if ("focusPainted".equals(p)) {
+                    sb.append("        ").append(name).append(".setFocusPainted(").append(v).append(");\n");
                 } else if ("dividerLocation".equals(p)) {
                     sb.append("        ").append(name).append(".setDividerLocation(").append(v).append(");\n");
                 } else if ("border".equals(p)) {
@@ -291,7 +293,20 @@ public class FormJavaGenerator {
             } else if ("BorderLayout".equalsIgnoreCase(layout)) {
                 sb.append("        ").append(name).append(".setLayout(new java.awt.BorderLayout());\n");
             } else if ("FlowLayout".equalsIgnoreCase(layout)) {
-                sb.append("        ").append(name).append(".setLayout(new java.awt.FlowLayout());\n");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> lprops = (Map<String, Object>) comp.get("layoutProperties");
+                int align = 1;
+                if (lprops != null && lprops.containsKey("alignment")) {
+                    align = ((Number) lprops.get("alignment")).intValue();
+                }
+                String alignConst = align == 0 ? "java.awt.FlowLayout.LEFT" : (align == 2 ? "java.awt.FlowLayout.RIGHT" : "java.awt.FlowLayout.CENTER");
+                if (lprops != null && (lprops.containsKey("horizontalGap") || lprops.containsKey("verticalGap"))) {
+                    int hgap = lprops.containsKey("horizontalGap") ? ((Number) lprops.get("horizontalGap")).intValue() : 5;
+                    int vgap = lprops.containsKey("verticalGap") ? ((Number) lprops.get("verticalGap")).intValue() : 5;
+                    sb.append("        ").append(name).append(".setLayout(new java.awt.FlowLayout(").append(alignConst).append(", ").append(hgap).append(", ").append(vgap).append("));\n");
+                } else {
+                    sb.append("        ").append(name).append(".setLayout(new java.awt.FlowLayout(").append(alignConst).append("));\n");
+                }
             } else if ("BoxLayout".equalsIgnoreCase(layout)) {
                 sb.append("        ").append(name).append(".setLayout(new javax.swing.BoxLayout(").append(name).append(", javax.swing.BoxLayout.Y_AXIS));\n");
             } else if ("GridBagLayout".equalsIgnoreCase(layout)) {
