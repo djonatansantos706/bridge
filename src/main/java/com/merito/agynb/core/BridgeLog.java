@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
+import org.openide.windows.WindowManager;
 
 /**
  * Log de auditoria da bridge na janela de Output do NetBeans.
@@ -17,6 +18,11 @@ import org.openide.windows.OutputWriter;
  * selecionada automaticamente — o desenvolvedor consulta quando quiser —
  * e, como é uma aba de output comum, o próprio agente pode lê-la via
  * {@code nb_output_get_text}.
+ *
+ * <p>A escrita no Output Window é sempre postada na EDT via
+ * {@code WindowManager.invokeWhenUIReady}, garantindo que o LAF dark
+ * esteja aplicado quando a aba for criada e evitando repaints
+ * fora da EDT que corrompem o fundo das outras abas.</p>
  */
 public final class BridgeLog {
 
@@ -47,14 +53,26 @@ public final class BridgeLog {
         line(message, false);
     }
 
-    private static synchronized void line(String message, boolean asError) {
-        try {
-            InputOutput io = IOProvider.getDefault().getIO(TAB_NAME, false);
-            OutputWriter writer = asError ? io.getErr() : io.getOut();
-            writer.println("[" + LocalTime.now().format(HORA) + "] " + message);
-        } catch (Exception ex) {
-            // O log de auditoria nunca pode derrubar uma requisição da bridge
-            LOG.log(Level.FINE, "Falha ao escrever no Bridge Log", ex);
-        }
+    /**
+     * Posta a escrita na EDT via invokeWhenUIReady.
+     *
+     * Motivo: IOProvider.getIO() e OutputWriter.println() envolvem
+     * operações de layout/paint no Swing. Chamá-los fora da EDT —
+     * mesmo com a UI já "pronta" — força repaints em threads erradas,
+     * corrompendo o fundo de TODAS as abas do Output Window (aparecem
+     * brancas mesmo com FlatDarkLaf ativo).
+     */
+    private static void line(final String message, final boolean asError) {
+        final String timestamp = "[" + LocalTime.now().format(HORA) + "] ";
+        WindowManager.getDefault().invokeWhenUIReady(() -> {
+            try {
+                InputOutput io = IOProvider.getDefault().getIO(TAB_NAME, false);
+                OutputWriter writer = asError ? io.getErr() : io.getOut();
+                writer.println(timestamp + message);
+            } catch (Exception ex) {
+                // O log de auditoria nunca pode derrubar uma requisição da bridge
+                LOG.log(Level.FINE, "Falha ao escrever no Bridge Log", ex);
+            }
+        });
     }
 }
