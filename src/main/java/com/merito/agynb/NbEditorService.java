@@ -79,7 +79,7 @@ public class NbEditorService {
                 cookie.open();
                 if (line > 0) {
                     cookie.openDocument();
-                    cookie.getLineSet().getCurrent(Math.max(0, line - 1)).show(cookie.getLineSet().getCurrent(Math.max(0, line - 1)).SHOW_GOTO);
+                    cookie.getLineSet().getCurrent(Math.max(0, line - 1)).show(org.openide.text.Line.SHOW_SHOW);
                 }
             } catch (Exception ex) {
                 LOG.log(Level.WARNING, "Erro ao navegar para linha no NetBeans", ex);
@@ -425,7 +425,6 @@ public class NbEditorService {
                     JEditorPane pane = panes[0];
                     pane.setCaretPosition(finalStart);
                     pane.moveCaretPosition(finalEnd);
-                    pane.requestFocusInWindow();
                 }
             } catch (Exception ex) {
                 LOG.log(Level.WARNING, "Erro ao definir seleção no editor", ex);
