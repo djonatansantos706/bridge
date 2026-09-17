@@ -6,7 +6,7 @@
 
     <groupId>com.merito</groupId>
     <artifactId>agy-nb-bridge</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4</version>
     <packaging>nbm</packaging>
 
     <name>Antigravity NetBeans Bridge Suite</name>
