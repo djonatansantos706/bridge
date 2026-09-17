@@ -1,17 +1,23 @@
 package com.merito.agynb;
 
 import org.openide.modules.OnStart;
+import org.openide.util.RequestProcessor;
 import org.openide.windows.WindowManager;
 
 @OnStart
 public class StartServer implements Runnable {
+
     @Override
     public void run() {
-        // Aguarda a UI estar completamente pronta (LAF dark aplicado)
-        // antes de iniciar o servidor, evitando que a aba "Antigravity Bridge"
-        // no Output Window seja criada com o tema padrão/incorreto.
-        WindowManager.getDefault().invokeWhenUIReady(() -> {
-            AgyBridgeServer.getInstance().start();
-        });
+        // @OnStart já roda em background thread — correto.
+        // Aguarda a UI estar completamente pronta (LAF dark aplicado) via EDT,
+        // e em seguida devolve o start() para uma background thread via
+        // RequestProcessor, evitando bloquear a EDT com I/O (socket + token)
+        // e garantindo que a aba do BridgeLog herde o tema correto.
+        WindowManager.getDefault().invokeWhenUIReady(() ->
+            RequestProcessor.getDefault().post(() ->
+                AgyBridgeServer.getInstance().start()
+            )
+        );
     }
 }
