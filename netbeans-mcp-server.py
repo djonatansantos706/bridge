@@ -43,7 +43,8 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "file": {"type": "string", "description": "Caminho absoluto do arquivo a ser aberto"},
-                "line": {"type": "integer", "description": "Número da linha (opcional, padrão 1)"}
+                "line": {"type": "integer", "description": "Número da linha (opcional, padrão 1)"},
+                "take_focus": {"type": "boolean", "description": "Se deve ativar a aba e focar o editor (padrão false para não roubar foco do usuário)"}
             },
             "required": ["file"]
         }
@@ -539,7 +540,7 @@ def execute_tool(tool_name, args):
     if tool_name == "nb_status":
         return call_bridge("/status")
     elif tool_name == "nb_open_file":
-        return call_bridge("/open", {"file": args.get("file"), "line": args.get("line", 1)})
+        return call_bridge("/open", {"file": args.get("file"), "line": args.get("line", 1), "take_focus": args.get("take_focus", False)})
     elif tool_name == "nb_get_buffer":
         return call_bridge("/get-content", {"file": args.get("file")})
     elif tool_name == "nb_edit_buffer":

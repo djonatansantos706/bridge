@@ -65,6 +65,10 @@ public class NbEditorService {
     }
 
     public boolean openFileAtLine(String filePath, int line) {
+        return openFileAtLine(filePath, line, false);
+    }
+
+    public boolean openFileAtLine(String filePath, int line, boolean takeFocus) {
         FileObject fo = findFileObject(filePath);
         if (fo == null) {
             return false;
@@ -72,6 +76,16 @@ public class NbEditorService {
         EditorCookie cookie = getEditorCookie(fo);
         if (cookie == null) {
             return false;
+        }
+
+        if (!takeFocus) {
+            // Apenas carrega o documento em memória sem ativar aba nem roubar foco do usuário
+            try {
+                cookie.openDocument();
+            } catch (Exception ex) {
+                LOG.log(Level.WARNING, "Erro ao abrir documento em memória no NetBeans", ex);
+            }
+            return true;
         }
 
         EventQueue.invokeLater(() -> {
@@ -419,7 +433,6 @@ public class NbEditorService {
 
         EventQueue.invokeLater(() -> {
             try {
-                cookie.open();
                 JEditorPane[] panes = cookie.getOpenedPanes();
                 if (panes != null && panes.length > 0) {
                     JEditorPane pane = panes[0];

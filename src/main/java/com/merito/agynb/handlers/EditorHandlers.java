@@ -25,7 +25,8 @@ public final class EditorHandlers {
                 throw new IllegalArgumentException("Parâmetro 'file' é obrigatório.");
             }
             int line = getIntParam(params, 1, "line");
-            boolean opened = NbEditorService.getInstance().openFileAtLine(file, line);
+            boolean takeFocus = getBoolParam(params, false, "take_focus", "focus");
+            boolean opened = NbEditorService.getInstance().openFileAtLine(file, line, takeFocus);
             if (opened) {
                 return BridgeResponse.ok("message", "Arquivo aberto no editor do NetBeans");
             }
@@ -247,6 +248,7 @@ public final class EditorHandlers {
             }
 
             boolean openInEditor = getBoolParam(params, true, "open_in_editor", "open");
+            boolean takeFocus = getBoolParam(params, false, "take_focus", "focus");
             int line = getIntParam(params, 1, "line");
 
             java.io.File parentDir = file.getParentFile();
@@ -274,7 +276,7 @@ public final class EditorHandlers {
 
             boolean opened = false;
             if (openInEditor) {
-                opened = NbEditorService.getInstance().openFileAtLine(file.getAbsolutePath(), line);
+                opened = NbEditorService.getInstance().openFileAtLine(file.getAbsolutePath(), line, takeFocus);
             }
 
             return BridgeResponse.ok("message", "Arquivo criado e sincronizado com sucesso no NetBeans")
