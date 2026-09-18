@@ -1,172 +1,217 @@
-# 📘 Guia Definitivo: Instalação da Bridge e Mint
+# 📚 WIKI: Manual de Instalação e Operação — NetBeans Bridge & Mint MCP
 
-Este guia passo a passo foi elaborado para você e sua equipe instalarem e configurarem a **NetBeans Bridge Suite** e o **Mint (Miti)** tanto no **Google Antigravity** quanto no **Claude Code**.
+| Metadado | Detalhe |
+| :--- | :--- |
+| **Identificador** | `WIKI-ENG-BRIDGE-MINT-01` |
+| **Status** | 🟢 **Homologado / Produção (v1.4.5)** |
+| **Público-Alvo** | Engenheiros de Software, Desenvolvedores JPosto/Java e Equipe de IA |
+| **Sistemas Alvo** | Google Antigravity & Claude Code CLI |
+| **Última Revisão** | Setembro / 2026 |
 
 ---
 
-## 🧭 Visão Geral da Arquitetura
+## 📑 Sumário de Navegação Rápida
 
-```text
- Assistentes de IA:       [ Google Antigravity ]          [ Claude Code ]
-                                     │                            │
-                     ┌───────────────┴────────────┬───────────────┘
-                     │                            │
-                     ▼                            ▼
-           [ NetBeans Bridge ]               [ Mint (Miti) ]
-          (Servidor MCP Python)           (Servidor MCP Python)
-                     │                            │
-                     │ (Porta 8388)               │ (Gera código & chama Bridge)
-                     ▼                            ▼
-         ┌─────────────────────────────────────────────────┐
-         │     Apache NetBeans (IDE com Plugin .nbm)       │
-         │   - Edição de buffers em memória (Windows-1252) │
-         │   - Histórico local / Undo (Ctrl+Z) mantido     │
-         │   - Telas Swing MVP & CRUDs JBase               │
-         └─────────────────────────────────────────────────┘
+1. [Visão Geral & Matriz de Arquitetura](#1-visão-geral--matriz-de-arquitetura)
+2. [Matriz de Componentes & Repositórios](#2-matriz-de-componentes--repositórios)
+3. [Instalação no Google Antigravity](#3-instalação-no-google-antigravity)
+   - 3.1. [NetBeans Bridge Suite](#31-netbeans-bridge-suite)
+   - 3.2. [Mint (Miti) Boilerplate Engine](#32-mint-miti-boilerplate-engine)
+4. [Instalação no Claude Code](#4-instalação-no-claude-code)
+   - 4.1. [Registro Global dos MCPs](#41-registro-global-dos-mcps)
+   - 4.2. [Diretriz de Operação (CLAUDE.md)](#42-diretriz-de-operação-claudemd)
+5. [Procedimento de Atualização Diária (SOP)](#5-procedimento-de-atualização-diária-sop)
+6. [Protocolo de Design de Telas Swing](#6-protocolo-de-design-de-telas-swing)
+7. [Guia de Troubleshooting & FAQ](#7-guia-de-troubleshooting--faq)
+
+---
+
+## 1. Visão Geral & Matriz de Arquitetura
+
+O ecossistema integra assistentes de Inteligência Artificial ao Apache NetBeans e ao ecossistema JBase através do protocolo **Model Context Protocol (MCP)** e de uma API HTTP local de alta performance:
+
+```mermaid
+flowchart TD
+    subgraph IA["Assistentes de IA"]
+        AGY["Google Antigravity"]
+        CC["Claude Code CLI"]
+    end
+
+    subgraph MCP["Servidores MCP (Python)"]
+        BRIDGE_MCP["NetBeans Bridge MCP<br/>(bridge/netbeans-mcp-server.py)"]
+        MINT_MCP["Mint MCP Engine<br/>(mint/mint-mcp-server.py)"]
+    end
+
+    subgraph IDE["Apache NetBeans IDE"]
+        PLUGIN["Plugin agy-nb-bridge.nbm<br/>(HTTP REST :8388)"]
+        BUFFER["Editor in-Memory<br/>(Windows-1252 / Undo / Histórico)"]
+    end
+
+    AGY --> BRIDGE_MCP
+    AGY --> MINT_MCP
+    CC --> BRIDGE_MCP
+    CC --> MINT_MCP
+
+    BRIDGE_MCP -->|HTTP :8388| PLUGIN
+    MINT_MCP -->|Gera Telas/CRUD| PLUGIN
+    PLUGIN --> BUFFER
 ```
 
 ---
 
-# 🤖 PARTE 1: Configuração no Google Antigravity
+## 2. Matriz de Componentes & Repositórios
 
-### 1.1. Instalar a NetBeans Bridge no Antigravity
-Abra o terminal no Ubuntu / Linux e execute:
+| Componente | Tipo / Linguagem | Repositório Oficial | Pacote / Execução | Finalidade Principal |
+| :--- | :--- | :--- | :--- | :--- |
+| **NetBeans Bridge** | Plugin Java + Servidor Python | [`djonatansantos706/bridge`](https://github.com/djonatansantos706/bridge) | `.nbm` (176 KB) + Python 3 | Edição in-memory no NetBeans, AST, logs, debug e preservação de charset nativo. |
+| **Mint (Miti)** | Motor Python Puro | [`djonatansantos706/mint`](https://github.com/djonatansantos706/mint) *(Privado)* | Scripts Python 3 / Pytest | Parser de planilhas `.ods`, geração de CRUD JBase (Entidade, BD, SC, SE, SQL) e Telas MVP. |
+
+> [!NOTE]
+> O **Mint** é um script Python (não utiliza `.nbm`). O único arquivo `.nbm` é o da **Bridge**, responsável por injetar código dentro da IDE.
+
+---
+
+## 3. Instalação no Google Antigravity
+
+### 3.1. NetBeans Bridge Suite
+
+Abra o terminal do Linux e execute:
 
 ```bash
-# 1. Clonar o repositório e executar o setup automático
+# 1. Clonar o repositório
 git clone https://github.com/djonatansantos706/bridge.git ~/bridge
+
+# 2. Executar setup automatizado
 ~/bridge/setup_antigravity.sh
 ```
 
-**O que o setup faz sozinho:**
-- Instala o plugin `.nbm` pré-compilado diretamente nas pastas do seu Apache NetBeans (`~/.netbeans/*/modules/`).
-- Copia todos os schemas das 40 ferramentas e as instruções mestres para `~/.gemini/antigravity/mcp/netbeans-bridge/`.
-- Instala a regra permanente de edição segura em memória e preview de telas no seu ambiente global.
+**Ações executadas pelo instalador:**
+- Instala o arquivo `dist/agy-nb-bridge-latest.nbm` automaticamente nas pastas de módulos de todas as versões do NetBeans encontradas (`~/.netbeans/*/modules/`).
+- Copia os 40 schemas `.json` e o `instructions.md` para `~/.gemini/antigravity/mcp/netbeans-bridge/`.
+- Adiciona a regra permanente de preservação de buffer e preview de telas em `~/.gemini/config/rules/netbeans_bridge.md`.
 
-> **Importante:** Se o NetBeans já estiver aberto, feche e abra-o novamente para carregar o plugin. A mensagem `[Antigravity] Bridge Suite ativa na porta 8388` aparecerá no rodapé da IDE.
+> ⚠️ **Pós-Instalação:** Feche e reabra o Apache NetBeans. Verifique a mensagem `[Antigravity] Bridge Suite ativa na porta 8388` no rodapé da IDE.
 
 ---
 
-### 1.2. Instalar o Mint (Miti) no Antigravity
-Execute no terminal:
+### 3.2. Mint (Miti) Boilerplate Engine
+
+No terminal, execute:
 
 ```bash
-# 1. Clonar o repositório e executar o setup automático
+# 1. Clonar o repositório
 git clone https://github.com/djonatansantos706/mint.git ~/mint
+
+# 2. Executar setup automatizado
 ~/mint/setup_antigravity.sh
 ```
 
-**O que o setup faz sozinho:**
-- Registra o servidor MCP `mint` no seu arquivo `~/.gemini/config/mcp_config.json`.
-- Copia os schemas das ferramentas (`mint_status`, `mint_parse_ods`, `mint_gerar_crud`, `mint_gerar_tela`, etc.) e diretrizes mestres para `~/.gemini/antigravity/mcp/mint/`.
-- Valida as dependências Python e testa a comunicação com a NetBeans Bridge.
+**Ações executadas pelo instalador:**
+- Registra o servidor MCP `mint` no arquivo de configuração global `~/.gemini/config/mcp_config.json`.
+- Copia os schemas (`mint_status`, `mint_parse_ods`, `mint_gerar_crud`, `mint_gerar_tela`, `mint_aprender`, `mint_gerar_tudo`) e instruções para `~/.gemini/antigravity/mcp/mint/`.
+- Executa diagnóstico do ambiente Python e verifica a comunicação com a NetBeans Bridge.
 
 ---
 
-### 1.3. Como Atualizar no dia a dia (Antigravity):
-Sempre que houver atualizações nos repositórios, basta rodar 1 comando em cada pasta:
+## 4. Instalação no Claude Code
+
+### 4.1. Registro Global dos MCPs
+
+Execute os dois comandos abaixo no terminal da sua máquina:
 
 ```bash
-# Atualizar a Bridge (código, schemas e plugin no NetBeans):
-cd ~/bridge && ./update.sh
-
-# Atualizar o Mint (código, schemas e testes):
-cd ~/mint && ./update.sh
-```
-
----
-
-# 🟣 PARTE 2: Configuração no Claude Code
-
-No Claude Code, você adiciona os servidores MCP diretamente pela CLI através do parâmetro `--scope user` (para ficar disponível globalmente em qualquer pasta).
-
-### 2.1. Pré-requisito: Clonar os Repositórios
-Se ainda não clonou os repositórios na máquina, execute:
-
-```bash
-git clone https://github.com/djonatansantos706/bridge.git ~/bridge
-git clone https://github.com/djonatansantos706/mint.git ~/mint
-```
-
-> **Plugin no NetBeans:** Garanta que o plugin da Bridge está instalado no NetBeans rodando:  
-> `~/bridge/setup_antigravity.sh` ou instalando o arquivo `~/bridge/dist/agy-nb-bridge-latest.nbm` pelo menu *Tools > Plugins > Downloaded*.
-
----
-
-### 2.2. Registrar o MCP da Bridge no Claude Code
-Execute no terminal:
-
-```bash
+# Registrar a NetBeans Bridge (escopo global do usuário)
 claude mcp add --scope user netbeans-bridge python3 "$HOME/bridge/netbeans-mcp-server.py"
-```
 
----
-
-### 2.3. Registrar o MCP do Mint no Claude Code
-Execute no terminal:
-
-```bash
+# Registrar o Mint (escopo global do usuário)
 claude mcp add --scope user mint python3 "$HOME/mint/mint-mcp-server.py"
 ```
 
----
-
-### 2.4. Validar a Conexão no Claude Code
-Execute:
-
+#### Verificação de Conectividade:
 ```bash
 claude mcp list
 ```
 
-A saída esperada deve listar os dois servidores com status conectado:
+**Resultado esperado:**
 ```text
 Checking MCP server health…
 
 netbeans-bridge: python3 /home/merito/bridge/netbeans-mcp-server.py (stdio) - ✔ Connected
-mint: python3 /home/merito/mint/mint-mcp-server.py (stdio) - ✔ Connected
+mint:            python3 /home/merito/mint/mint-mcp-server.py (stdio)       - ✔ Connected
 ```
 
 ---
 
-### 2.5. Regra Recomendada para o Claude Code (`CLAUDE.md`)
-Crie ou adicione ao arquivo `~/.claude/CLAUDE.md` (ou no `CLAUDE.md` da raiz dos seus projetos Java):
+### 4.2. Diretriz de Operação (`CLAUDE.md`)
+
+Adicione o bloco abaixo no seu arquivo `~/.claude/CLAUDE.md` ou na raiz do projeto Java:
 
 ```markdown
-# Diretrizes de Operação - NetBeans Bridge e Mint
+# Diretrizes Mandatórias de Engenharia
 
-## 1. Edição em Memória (Obrigatória)
-- Sempre utilize as ferramentas do `netbeans-bridge` (`nb_edit_buffer`, `nb_replace_lines`, `nb_set_content`) para editar arquivos de código Java.
-- Não sobrescreva arquivos Java diretamente no disco para preservar o encoding nativo (Windows-1252 / ISO-8859-1) e o histórico local / Ctrl+Z na IDE.
+## 1. Edição de Código via NetBeans Bridge
+- Utilize SEMPRE as ferramentas `nb_edit_buffer`, `nb_replace_lines` ou `nb_set_content`.
+- NUNCA sobrescreva arquivos diretamente no disco para garantir a preservação do encoding (Windows-1252 / ISO-8859-1) e do histórico local / Undo (Ctrl+Z) na IDE.
 
-## 2. Geração de Código com o Mint
-- Utilize as ferramentas do `mint` (`mint_parse_ods`, `mint_gerar_crud`, `mint_gerar_tela`) para criar entidades, DAOs, Presenters e formulários Swing.
-- Antes de gerar telas Swing (`mint_gerar_tela`), apresente a proposta visual da tela ao desenvolvedor.
+## 2. Geração de Telas e CRUDs via Mint
+- Utilize as ferramentas do `mint` (`mint_parse_ods`, `mint_gerar_crud`, `mint_gerar_tela`).
+- NUNCA gere arquivos Swing (.form/.java) sem apresentar pré-visualização visual em HTML homologada pelo desenvolvedor.
 ```
 
 ---
 
-# 🧪 PARTE 3: Teste Rápido de Verificação
+## 5. Procedimento de Atualização Diária (SOP)
 
-Para ter 100% de certeza de que tudo está operando perfeitamente:
+Quando houver novas versões, melhorias em templates ou novas ferramentas, execute 1 comando em cada diretório:
 
-1. **Abra o Apache NetBeans.**
-2. **Abra uma sessão no seu assistente (Antigravity ou Claude Code).**
-3. **Envie a mensagem de teste:**
-   > *"Verifique o status da NetBeans Bridge e do Mint."*
-4. O assistente executará `nb_status` e `mint_status`:
-   - A Bridge responderá: `{"ok": true, "version": "1.4.5", "service": "antigravity-netbeans-bridge"}`
-   - O Mint responderá: `{"ok": true, "motor": "pronto", "bridge_status": "conectado"}`
+```bash
+# Atualizar a NetBeans Bridge:
+cd ~/bridge && ./update.sh
+
+# Atualizar o Mint:
+cd ~/mint && ./update.sh
+```
+
+| Etapa | O que o `./update.sh` executa automaticamente |
+| :---: | :--- |
+| **1** | Executa `git pull` para baixar a versão mais recente do código. |
+| **2** | Atualiza os schemas MCP e instruções mestres do Antigravity. |
+| **3** | Atualiza o `.jar` do plugin diretamente dentro do NetBeans (no caso da Bridge). |
+| **4** | Executa a suíte de testes de validação (`qa_test.py` ou `pytest tests/`). |
 
 ---
 
-# 📋 Resumo dos Comandos Úteis
+## 6. Protocolo de Design de Telas Swing
 
-| Ação | Comando |
-| :--- | :--- |
-| **Instalar Bridge (Antigravity)** | `git clone https://github.com/djonatansantos706/bridge.git ~/bridge && ~/bridge/setup_antigravity.sh` |
-| **Instalar Mint (Antigravity)** | `git clone https://github.com/djonatansantos706/mint.git ~/mint && ~/mint/setup_antigravity.sh` |
-| **Atualizar Bridge** | `cd ~/bridge && ./update.sh` |
-| **Atualizar Mint** | `cd ~/mint && ./update.sh` |
-| **Adicionar Bridge no Claude Code** | `claude mcp add --scope user netbeans-bridge python3 "$HOME/bridge/netbeans-mcp-server.py"` |
-| **Adicionar Mint no Claude Code** | `claude mcp add --scope user mint python3 "$HOME/mint/mint-mcp-server.py"` |
-| **Listar MCPs no Claude Code** | `claude mcp list` |
+Toda criação ou alteração de telas Swing no ecossistema obedece ao seguinte fluxo padrão:
+
+1. **Geração do Preview HTML:** O assistente gera um preview HTML interativo no padrão **NetBeans Dark Look & Feel** (`#3c3f41`) usando como base o template `~/bridge/templates/template_preview_swing.html`.
+2. **Modo de Revisão e Comentários:** O desenvolvedor clica nos componentes (botões, campos, tabelas) para adicionar observações. O texto digitado possui alto contraste forçado (`#ffffff` sobre `#1e1e1e`).
+3. **Cópia de Feedback:** O desenvolvedor clica em **"📋 Copiar Feedback para o Chat"** e cola na conversa com o assistente (`Ctrl+V`).
+4. **Criação Física:** Apenas após aprovação expressa, o assistente aciona `mint_gerar_tela` ou `nb_form_create_blueprint` via Bridge.
+
+---
+
+## 7. Guia de Troubleshooting & FAQ
+
+### Q1: O colega recebeu `fatal: repository 'https://github.com/.../mint.git' not found (404)`
+- **Causa:** O repositório `djonatansantos706/mint` é **PRIVADO** por questões de sigilo dos dados da Mérito.
+- **Solução:** Acesse [Configurações de Colaboradores](https://github.com/djonatansantos706/mint/settings/access) e adicione o usuário do GitHub do colega clicando em **"Add people"**.
+
+### Q2: Erro `fatal: destination path '/home/merito/mint' already exists`
+- **Causa:** O desenvolvedor já possui a pasta clonada e tentou executar `git clone` novamente.
+- **Solução:** Como a pasta já existe, basta rodar diretamente:
+  ```bash
+  cd ~/mint && ./update.sh
+  ```
+
+### Q3: `NetBeans Bridge offline (porta 8388)`
+- **Causa:** O Apache NetBeans não está aberto ou o plugin ainda não foi carregado.
+- **Solução:**
+  1. Abra o Apache NetBeans.
+  2. Caso tenha acabado de instalar, feche e reabra o NetBeans para o módulo subir.
+  3. Verifique a mensagem no rodapé: `[Antigravity] Bridge Suite ativa na porta 8388`.
+
+### Q4: O texto digitado nos comentários de preview de tela não aparecia no tema escuro
+- **Causa:** O navegador ou IDE em modo escuro herdava cor preta no campo de texto.
+- **Solução:** Corrigido na versão 1.4.5 com a classe `.comment-textarea` (`background: #1e1e1e !important; color: #ffffff !important;`).
