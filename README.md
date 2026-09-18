@@ -133,21 +133,33 @@ Adicione a configuração no arquivo `~/.gemini/antigravity/mcp_config.json` (ou
 }
 ```
 
-#### 2. Copiar os Schemas JSON de Ferramentas:
-Para permitir a descoberta lazy/eager de ferramentas no Antigravity:
+#### 2. Instalação Automática em 1 Comando (Recomendado):
+Execute na raiz do repositório clonado:
 ```bash
-mkdir -p ~/.gemini/antigravity/mcp/netbeans-bridge
-cp ~/bridge/mcp-schemas/*.json ~/.gemini/antigravity/mcp/netbeans-bridge/
+./setup_antigravity.sh
+```
+O script copia os schemas, o `instructions.md` com as diretrizes mestres e a regra permanente do Antigravity para `~/.gemini/antigravity/mcp/netbeans-bridge/` e `~/.gemini/config/rules/`.
+
+#### 3. Instalação Manual (Alternativa):
+```bash
+mkdir -p ~/.gemini/antigravity/mcp/netbeans-bridge ~/.gemini/config/rules
+cp ~/bridge/mcp-schemas/*.json ~/bridge/mcp-schemas/instructions.md ~/.gemini/antigravity/mcp/netbeans-bridge/
+cp ~/bridge/rules/netbeans_bridge.md ~/.gemini/config/rules/
 ```
 
-#### 3. Regra de Edição Recomendada (Antigravity Rule):
-Adicione ao seu arquivo de regras do Antigravity (`~/.gemini/antigravity/rules` ou diretório de regras do projeto):
-```markdown
-# Regra de Edição via NetBeans Bridge
-Sempre que realizar modificações em arquivos de código Java/JPosto:
-1. Utilize SEMPRE a ponte do NetBeans (ferramentas nb_edit_buffer / nb_replace_lines / nb_set_content).
-2. Motivo: Preserva o encoding nativo (ISO-8859-1 / Windows-1252), marca com '*' não salvo e mantém o histórico local / Ctrl+Z sob controle do desenvolvedor.
-```
+---
+
+## 🎨 Protocolo de Design e Criação de Telas (HTML Preview com Comentários)
+
+A suite inclui um fluxo obrigatório para **criação e refatoração de telas Swing/JPosto/Mint**:
+
+1. **Preview Visual Antes do Código:** Nenhuma tela `.form`/`.java` deve ser criada diretamente sem pré-visualização. O assistente gera um HTML simulando a janela Swing.
+2. **Template com Modo de Revisão Embutido:** O template canônico em `templates/template_preview_swing.html` já vem com o motor de inspeção e comentários:
+   - Clique em qualquer componente (botões, inputs, abas, tabelas) para abrir o diálogo de anotações.
+   - Pinos numerados (*pins*) sinalizam as alterações solicitadas diretamente no elemento.
+   - Botão **"📋 Copiar Feedback para o Chat"** formata todos os comentários em Markdown estruturado para colar diretamente na conversa (`Ctrl+V`).
+3. **Criação Fiel via Bridge:** Apenas após a aprovação do desenvolvedor, as ferramentas da bridge (`nb_form_create_blueprint` ou `mint_gerar_tela`) são executadas.
+
 
 ---
 

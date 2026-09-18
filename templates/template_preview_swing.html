@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Preview de Tela Swing - Modo de Revisão e Comentários</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Estilos do Modo de Inspeção / Revisão */
+    .review-active [data-component] {
+      cursor: crosshair !important;
+      transition: outline 0.15s ease, box-shadow 0.15s ease;
+    }
+    .review-active [data-component]:hover {
+      outline: 2px dashed #3b82f6 !important;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important;
+    }
+    .review-active [data-component].has-comment {
+      outline: 2px solid #ef4444 !important;
+      outline-offset: 2px;
+    }
+    .comment-pin {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: #ef4444;
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      z-index: 50;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .swing-window {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 p-4 min-h-screen">
+
+  <!-- BARRA SUPERIOR DE REVISÃO E COMENTÁRIOS -->
+  <header class="max-w-5xl mx-auto mb-4 bg-white border border-slate-300 rounded-lg p-3 shadow-sm flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-bold text-slate-800 text-sm">Modo de Revisão de Tela</span>
+      </div>
+      <span class="text-xs text-slate-500 hidden sm:inline">| Clique em qualquer botão ou campo da tela para adicionar um comentário</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button id="btnToggleMode" onclick="toggleReviewMode()" class="text-xs px-3 py-1.5 rounded font-medium transition bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 shadow-sm">
+        <span id="toggleIcon">🎯</span>
+        <span id="toggleText">Modo Revisão Ativo</span>
+      </button>
+
+      <button onclick="abrirDrawer()" class="text-xs px-3 py-1.5 rounded font-medium border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center gap-1.5 shadow-sm">
+        <span>💬 Comentários</span>
+        <span id="badgeCount" class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+      </button>
+
+      <button onclick="copiarFeedback()" class="text-xs px-3 py-1.5 rounded font-medium bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-sm">
+        <span>📋 Copiar Feedback para Chat</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- JANELA SWING SIMULADA -->
+  <main class="max-w-5xl mx-auto swing-window review-active" id="swingCanvas">
+    <div class="bg-white border border-slate-400 rounded shadow-md overflow-hidden">
+      
+      <!-- Barra de Título da Janela -->
+      <div class="bg-slate-800 text-slate-100 px-3 py-1.5 flex items-center justify-between select-none text-xs">
+        <div class="flex items-center gap-2 font-medium">
+          <span class="text-blue-400">☕</span>
+          <span id="screenTitle">JPosto - Formulário de Exemplo [JDialogExemplo]</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-400">
+          <span class="hover:text-white cursor-pointer">_</span>
+          <span class="hover:text-white cursor-pointer">□</span>
+          <span class="hover:text-red-400 cursor-pointer">✕</span>
+        </div>
+      </div>
+
+      <!-- Barra de Ferramentas / Ações Rápidas -->
+      <div class="bg-slate-100 border-b border-slate-300 p-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button data-component="JButton (Novo)" id="btnNovo" class="relative bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs px-2.5 py-1 rounded shadow-xs flex items-center gap-1">
+            <span>📄</span> <span>Novo (F2)</span>
+          </button>
+          <button data-component="JButton (Salvar)" id="btnSalvar" class="relative bg-blue-600 hover:bg-blue-700 border border-blue-700 text-white text-xs px-3 py-1 rounded font-medium shadow-xs flex items-center gap-1">
+            <span>💾</span> <span>Salvar (F10)</span>
+          </button>
+          <button data-component="JButton (Excluir)" id="btnExcluir" class="relative bg-white hover:bg-red-50 border border-slate-300 text-red-600 text-xs px-2.5 py-1 rounded shadow-xs flex items-center gap-1">
+            <span>🗑️</span> <span>Excluir</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button data-component="JButton (Fechar)" id="btnFechar" class="relative bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs px-2.5 py-1 rounded shadow-xs flex items-center gap-1">
+            <span>🚪</span> <span>Fechar (Esc)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulário e Conteúdo Principal -->
+      <div class="p-4 space-y-4">
+
+        <!-- Abas (JTabbedPane) -->
+        <div class="border-b border-slate-300 flex gap-1 text-xs select-none">
+          <div data-component="JTab (Geral)" id="tabGeral" class="relative bg-white border-t-2 border-t-blue-600 border-x border-slate-300 px-4 py-1.5 font-semibold text-blue-700 rounded-t cursor-pointer">
+            Dados Gerais
+          </div>
+          <div data-component="JTab (Configurações)" id="tabConfig" class="relative bg-slate-100 hover:bg-slate-200 border-x border-slate-200 px-4 py-1.5 text-slate-600 rounded-t cursor-pointer">
+            Configurações & Parâmetros
+          </div>
+        </div>
+
+        <!-- Grade de Campos (JPanel GridLayout / Form) -->
+        <div class="grid grid-cols-12 gap-3 bg-slate-50 p-4 border border-slate-200 rounded">
+          
+          <div class="col-span-2 relative" data-component="Campo Código (txtCodigo)">
+            <label class="block text-slate-600 text-[11px] font-semibold mb-1">Código</label>
+            <input type="text" value="001" readonly class="w-full bg-slate-200 border border-slate-300 px-2 py-1 text-xs rounded text-slate-700">
+          </div>
+
+          <div class="col-span-6 relative" data-component="Campo Descrição (txtDescricao)">
+            <label class="block text-slate-600 text-[11px] font-semibold mb-1">Descrição *</label>
+            <input type="text" placeholder="Informe a descrição" value="Exemplo de Registro" class="w-full bg-white border border-slate-300 px-2 py-1 text-xs rounded text-slate-800">
+          </div>
+
+          <div class="col-span-4 relative" data-component="Combo Categoria (cbCategoria)">
+            <label class="block text-slate-600 text-[11px] font-semibold mb-1">Categoria</label>
+            <select class="w-full bg-white border border-slate-300 px-2 py-1 text-xs rounded text-slate-800">
+              <option selected>Padrão / Principal</option>
+              <option>Secundário</option>
+            </select>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Barra de Status (StatusBar) -->
+      <div class="bg-slate-100 border-t border-slate-300 px-3 py-1 text-[11px] text-slate-500 flex justify-between">
+        <span>Status: Pronto</span>
+        <span>JPosto NetBeans Bridge MVP</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL DE COMENTÁRIO -->
+  <div id="modalComentario" class="fixed inset-0 bg-black/40 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-blue-400 text-base">💬</span>
+          <span class="font-bold text-sm">Adicionar Comentário</span>
+        </div>
+        <button onclick="fecharModal()" class="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Componente Selecionado</label>
+          <div id="modalCompNome" class="text-xs font-mono font-bold bg-slate-100 text-blue-700 px-2.5 py-1.5 rounded border border-slate-200">
+            [JButton] btnSalvar
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">O que você gostaria de mudar neste item?</label>
+          <textarea id="txtComentario" rows="3" placeholder="Ex: Não gostei desse botão aqui, mover para a direita ou trocar o texto para..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button onclick="fecharModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded">Cancelar</button>
+          <button onclick="salvarComentario()" class="px-4 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow-sm">Salvar Comentário</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER LATERAL DE COMENTÁRIOS -->
+  <aside id="drawerComentarios" class="fixed top-0 right-0 h-full w-96 bg-white border-l border-slate-300 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-3 bg-slate-900 text-white flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-amber-400 font-bold">📋</span>
+        <span class="font-bold text-sm">Comentários da Tela</span>
+      </div>
+      <button onclick="fecharDrawer()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+    </div>
+
+    <div class="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-xs">
+      <span class="text-slate-500"><b id="drawerCount" class="text-slate-800">0</b> comentários registrados</span>
+      <button onclick="limparComentarios()" class="text-red-600 hover:underline text-[11px]">Limpar todos</button>
+    </div>
+
+    <div id="listaComentarios" class="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
+      <div id="emptyState" class="text-center py-12 text-slate-400">
+        <span class="text-3xl block mb-2">🔍</span>
+        Nenhum comentário adicionado ainda.<br>
+        Clique em qualquer componente da tela para anotar!
+      </div>
+    </div>
+
+    <div class="p-3 bg-slate-50 border-t border-slate-200">
+      <button onclick="copiarFeedback()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow flex items-center justify-center gap-2">
+        <span>📋 Copiar Feedback para o Chat</span>
+      </button>
+      <p class="text-[10px] text-center text-slate-500 mt-1.5">Depois de copiar, basta dar <kbd class="px-1 py-0.5 bg-slate-200 rounded text-slate-700 font-mono">Ctrl+V</kbd> na conversa com o Antigravity</p>
+    </div>
+  </aside>
+
+  <!-- TOAST DE NOTIFICAÇÃO -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-medium hidden z-50 items-center gap-2 border border-slate-700">
+    <span class="text-emerald-400 text-base">✓</span>
+    <span id="toastMsg">Feedback copiado com sucesso!</span>
+  </div>
+
+  <script>
+    let reviewMode = true;
+    let selectedElement = null;
+    let comentarios = [];
+
+    function toggleReviewMode() {
+      reviewMode = !reviewMode;
+      const canvas = document.getElementById('swingCanvas');
+      const toggleText = document.getElementById('toggleText');
+      const toggleIcon = document.getElementById('toggleIcon');
+      const btn = document.getElementById('btnToggleMode');
+
+      if (reviewMode) {
+        canvas.classList.add('review-active');
+        toggleText.innerText = 'Modo Revisão Ativo';
+        toggleIcon.innerText = '🎯';
+        btn.className = 'text-xs px-3 py-1.5 rounded font-medium transition bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 shadow-sm';
+      } else {
+        canvas.classList.remove('review-active');
+        toggleText.innerText = 'Modo Interação Normal';
+        toggleIcon.innerText = '👆';
+        btn.className = 'text-xs px-3 py-1.5 rounded font-medium transition bg-slate-200 text-slate-700 hover:bg-slate-300 flex items-center gap-1.5 shadow-sm';
+      }
+    }
+
+    document.getElementById('swingCanvas').addEventListener('click', function(e) {
+      if (!reviewMode) return;
+      const comp = e.target.closest('[data-component]');
+      if (!comp) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      abrirModal(comp);
+    });
+
+    function abrirModal(el) {
+      selectedElement = el;
+      const compName = el.getAttribute('data-component') || el.id || el.tagName;
+      document.getElementById('modalCompNome').innerText = compName;
+      document.getElementById('txtComentario').value = '';
+      
+      const modal = document.getElementById('modalComentario');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('txtComentario').focus(), 50);
+    }
+
+    function fecharModal() {
+      const modal = document.getElementById('modalComentario');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      selectedElement = null;
+    }
+
+    function salvarComentario() {
+      const texto = document.getElementById('txtComentario').value.trim();
+      if (!texto || !selectedElement) return;
+
+      const compName = selectedElement.getAttribute('data-component') || selectedElement.id;
+      const id = Date.now();
+
+      comentarios.push({
+        id,
+        componente: compName,
+        elementoId: selectedElement.id || '',
+        texto: texto,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      selectedElement.classList.add('has-comment');
+      let pin = selectedElement.querySelector('.comment-pin');
+      if (!pin) {
+        pin = document.createElement('div');
+        pin.className = 'comment-pin';
+        pin.title = 'Ver comentário';
+        selectedElement.appendChild(pin);
+      }
+      pin.innerText = comentarios.length;
+
+      fecharModal();
+      atualizarUI();
+      mostrarToast(`Comentário anotado em "${compName}"!`);
+    }
+
+    function removerComentario(id) {
+      comentarios = comentarios.filter(c => c.id !== id);
+      atualizarUI();
+      mostrarToast('Comentário removido.');
+    }
+
+    function limparComentarios() {
+      if (!confirm('Deseja limpar todos os comentários?')) return;
+      comentarios = [];
+      document.querySelectorAll('.comment-pin').forEach(p => p.remove());
+      document.querySelectorAll('.has-comment').forEach(el => el.classList.remove('has-comment'));
+      atualizarUI();
+      mostrarToast('Comentários removidos.');
+    }
+
+    function atualizarUI() {
+      const count = comentarios.length;
+      document.getElementById('badgeCount').innerText = count;
+      document.getElementById('drawerCount').innerText = count;
+
+      const lista = document.getElementById('listaComentarios');
+      const emptyState = document.getElementById('emptyState');
+
+      if (count === 0) {
+        emptyState.style.display = 'block';
+        lista.innerHTML = '';
+        lista.appendChild(emptyState);
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      lista.innerHTML = '';
+
+      comentarios.forEach((c, index) => {
+        const item = document.createElement('div');
+        item.className = 'bg-slate-50 border border-slate-200 rounded p-2.5 hover:border-blue-300 transition';
+        item.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-blue-700 text-[11px] flex items-center gap-1">
+              <span class="w-4 h-4 bg-red-500 text-white rounded-full inline-flex items-center justify-center text-[10px]">${index + 1}</span>
+              ${c.componente}
+            </span>
+            <span class="text-slate-400 text-[10px]">${c.timestamp}</span>
+          </div>
+          <p class="text-slate-700 text-xs mb-2 bg-white p-2 rounded border border-slate-100">${c.texto}</p>
+          <div class="flex justify-end">
+            <button onclick="removerComentario(${c.id})" class="text-[10px] text-red-500 hover:text-red-700">Excluir</button>
+          </div>
+        `;
+        lista.appendChild(item);
+      });
+    }
+
+    function abrirDrawer() {
+      document.getElementById('drawerComentarios').classList.remove('translate-x-full');
+    }
+
+    function fecharDrawer() {
+      document.getElementById('drawerComentarios').classList.add('translate-x-full');
+    }
+
+    function copiarFeedback() {
+      if (comentarios.length === 0) {
+        mostrarToast('⚠️ Nenhum comentário anotado ainda. Clique nos elementos da tela!');
+        return;
+      }
+
+      const telaNome = document.getElementById('screenTitle').innerText.replace('JPosto - ', '');
+      let md = `### 📝 Feedback de Revisão da Tela [${telaNome}]\n\n`;
+      comentarios.forEach((c, idx) => {
+        const ref = c.elementoId ? `(\`#${c.elementoId}\`)` : '';
+        md += `${idx + 1}. **${c.componente}** ${ref}: ${c.texto}\n`;
+      });
+      md += `\n*Por favor, aplique estes ajustes no planejamento antes da criação via NetBeans Bridge/Mint.*`;
+
+      navigator.clipboard.writeText(md).then(() => {
+        mostrarToast('📋 Feedback copiado! Cole no chat com Ctrl+V');
+      }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = md;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        mostrarToast('📋 Feedback copiado! Cole no chat com Ctrl+V');
+      });
+    }
+
+    function mostrarToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>

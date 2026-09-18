@@ -11,6 +11,10 @@
       "line": {
         "type": "integer",
         "description": "Número da linha (opcional, padrão 1)"
+      },
+      "take_focus": {
+        "type": "boolean",
+        "description": "Se deve ativar a aba e focar o editor (padrão false para não roubar foco do usuário)"
       }
     },
     "required": [
