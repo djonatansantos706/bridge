@@ -43,36 +43,59 @@ Suíte completa de integração bidirecional em tempo real entre o **Apache NetB
 
 ---
 
-## 📦 Passo a Passo de Instalação no Ubuntu / Linux
+## ⚡ Comandos Padrão para Toda a Equipe (Rápido e sem Maven)
 
-### 1. Instalar Pré-requisitos
-Abra o terminal no Ubuntu e garanta que os pacotes necessários estão instalados:
+> **Zero Compilação:** O repositório já inclui o pacote `.nbm` pré-compilado em `dist/agy-nb-bridge-latest.nbm`. Não é necessário instalar JDK 17 nem Maven!
+
+### 📥 1. Comando Padrão para BAIXAR / INSTALAR (Primeira Vez)
+Execute no terminal da máquina:
 ```bash
-sudo apt update
-sudo apt install -y git openjdk-17-jdk maven python3
+git clone https://github.com/djonatansantos706/bridge.git ~/bridge && ~/bridge/setup_antigravity.sh
 ```
-
-### 2. Clonar o Repositório e Compilar o Plugin
+*Ou direto em 1 linha sem nem clonar manualmente:*
 ```bash
-# Clonar o repositório
-git clone https://github.com/djonatansantos706/bridge.git ~/bridge
-
-# Entrar na pasta e compilar o pacote NBM
-cd ~/bridge
-mvn clean install
+curl -sSL https://raw.githubusercontent.com/djonatansantos706/bridge/main/update.sh | bash
 ```
-> O arquivo `.nbm` do plugin será gerado em: `~/bridge/target/nbm/agy-nb-bridge-1.2.0.nbm`
-
-### 3. Instalar o Plugin no Apache NetBeans
-1. Abra o **Apache NetBeans**.
-2. Acesse o menu **Tools > Plugins** (ou *Ferramentas > Plugins*).
-3. Vá até a aba **Downloaded** (ou *Baixados*) e clique em **Add Plugins...** (ou *Adicionar Plugins...*).
-4. Selecione o arquivo gerado:
-   `~/bridge/target/nbm/agy-nb-bridge-1.2.0.nbm`
-5. Clique em **Install**, avance e conclua a instalação.
-6. A mensagem `[Antigravity] Bridge Suite ativa na porta 8388` será exibida no rodapé do NetBeans.
 
 ---
+
+### 🔄 2. Comando Padrão para ATUALIZAR (Sempre que houver novidades)
+Execute no terminal:
+```bash
+cd ~/bridge && ./update.sh
+```
+*Ou de qualquer pasta do terminal:*
+```bash
+curl -sSL https://raw.githubusercontent.com/djonatansantos706/bridge/main/update.sh | bash
+```
+
+#### O que o comando de atualização faz sozinho:
+1. Puxa as últimas novidades do Git (`git pull origin main`).
+2. Atualiza o pacote `.nbm` diretamente no seu NetBeans (`~/.netbeans/*/modules/`).
+3. Sincroniza as ferramentas MCP, diretrizes mestres e regras no Antigravity (`~/.gemini/`).
+4. Testa a conectividade com a ponte na porta 8388 do NetBeans.
+
+
+## 📦 Instalação Manual ou Compilação a partir do Fonte (Opcional)
+
+Se você preferir compilar manualmente ou instalar pela interface gráfica do NetBeans:
+
+1. **Instalação do .nbm via Interface do NetBeans:**
+   - Abra o **Apache NetBeans** &gt; **Tools > Plugins** (ou *Ferramentas > Plugins*).
+   - Vá na aba **Downloaded** (ou *Baixados*) &gt; **Add Plugins...**.
+   - Selecione o arquivo: `~/bridge/dist/agy-nb-bridge-latest.nbm`.
+   - Clique em **Install** e reinicie o NetBeans.
+
+2. **Compilação do Fonte com Maven:**
+   ```bash
+   sudo apt update && sudo apt install -y git openjdk-17-jdk maven python3
+   cd ~/bridge
+   mvn clean install
+   ```
+   > O novo arquivo compilado será gerado em `target/agy-nb-bridge-*.nbm`.
+
+---
+
 
 ## 🔐 Autenticação (automática)
 
