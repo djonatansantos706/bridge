@@ -26,15 +26,16 @@ Sempre que a tarefa envolver planejar, criar ou reformular telas de interface gr
 
 ### Fluxo Obrigatório de 4 Etapas:
 
-1. **Gerar Preview HTML Interativo:**
+1. **Gerar Preview HTML Interativo no Padrão NetBeans Dark:**
    - Antes de tocar no código Java/Swing, gere um arquivo HTML de preview (ex: `preview_<nome_tela>.html`) no diretório de artefatos da conversa (`<appDataDir>/brain/<conversation-id>/`).
-   - O HTML deve simular com fidelidade a janela Swing (barra de título, abas, campos de formulário, botões de ação e tabelas).
-   - Use o template canônico disponível em `~/bridge/templates/template_preview_swing.html` como referência.
+   - O HTML deve reproduzir fielmente o visual do NetBeans Dark Designer (fundo `#3c3f41`, campos `#45494a` com texto `#ffffff`, bordas, abas, botões e tabelas).
+   - Use SEMPRE como base o template oficial em `~/bridge/templates/template_preview_swing.html`.
 
 2. **Embutir o Motor de Revisão Interativo (Comentários por Componente):**
    - O preview HTML deve OBRIGATORIAMENTE conter o modo de revisão habilitado por padrão.
    - Cada componente (botões, inputs, combos, checkboxes, abas, tabelas) deve possuir o atributo `data-component="Nome Técnico / Label"`.
-   - Ao clicar em qualquer elemento, abre-se um diálogo para o desenvolvedor anotar o que deseja mudar (ex: *"não gostei deste botão aqui, mover para o rodapé e trocar o texto"*).
+   - Ao clicar em qualquer elemento, abre-se um diálogo para o desenvolvedor anotar o que deseja mudar.
+   - A caixa de texto de comentário deve ter alto contraste absoluto (fundo `#1e1e1e` e texto branco `#ffffff` com cursor azul) para total visibilidade em tema escuro.
    - O componente ganha um alfinete numerado (*pin*) indicando a anotação.
    - Deve conter o botão de 1 clique **"📋 Copiar Feedback para o Chat"**, que exporta a lista de comentários em Markdown estruturado para o desenvolvedor colar diretamente na conversa (`Ctrl+V`).
 

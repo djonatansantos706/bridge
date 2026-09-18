@@ -1,7 +1,7 @@
 ---
 name: netbeans-bridge-rule
 always_on: true
-description: "Diretriz obrigatória de edição segura via NetBeans Bridge e protocolo de preview HTML interativo para telas."
+description: "Diretriz obrigatória de edição segura via NetBeans Bridge e protocolo de preview HTML interativo (NetBeans Dark) para telas."
 ---
 
 # Diretriz de Edição e Criação de Telas via NetBeans Bridge
@@ -11,9 +11,9 @@ Quando o usuário solicitar edições em arquivos de código do projeto (Java, J
 - **Zero corrupção de encoding**: O NetBeans manipula em memória e salva no charset nativo do projeto (ISO-8859-1 / Windows-1252 / UTF-8) quando o usuário pressiona `Ctrl+S`.
 - **Histórico Local e Undo**: As edições são registradas como modificações de buffer com aba marcada como não salva (`*`), permitindo revisão visual e `Ctrl+Z`.
 
-## 2. Protocolo Obrigatório de Telas (Preview HTML com Modo de Revisão)
+## 2. Protocolo Obrigatório de Telas (Preview HTML NetBeans Dark com Revisão)
 Sempre que for solicitado planejar, criar ou reformular telas de interface gráfica (Swing, JPosto, Mint):
 1. **NUNCA** crie ou altere arquivos de formulários Swing (`.form`/`.java`) ou execute `mint_gerar_tela` sem aprovação visual prévia do usuário.
-2. **SEMPRE** gere um preview visual interativo em HTML (`preview_<nome_tela>.html`) no diretório de artefatos da conversa (`<appDataDir>/brain/<conversation-id>/`) usando como base o template `~/bridge/templates/template_preview_swing.html`.
-3. O HTML deve incluir o motor interativo de comentários (`modo de revisão`), permitindo ao desenvolvedor clicar em qualquer botão, campo ou painel para anotar ajustes e copiar a lista consolidada em Markdown com 1 clique para colar no chat.
+2. **SEMPRE** gere um preview visual interativo em HTML (`preview_<nome_tela>.html`) no diretório de artefatos da conversa usando como base o template `~/bridge/templates/template_preview_swing.html`.
+3. O HTML deve reproduzir fielmente o padrão **NetBeans Dark Look & Feel** e conter o motor interativo de comentários com alto contraste forçado (texto branco sobre fundo escuro), permitindo ao desenvolvedor clicar em qualquer botão, campo ou tabela para anotar ajustes e copiar a lista consolidada em Markdown com 1 clique para colar no chat.
 4. Apresente o link do preview no `implementation_plan.md` e aguarde os comentários ou aprovação expressa do usuário antes de iniciar a criação física via bridge.
