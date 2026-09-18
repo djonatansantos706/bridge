@@ -46,6 +46,12 @@ cp -f "$REPO_DIR"/rules/netbeans_bridge.md "$RULES_DIR/" 2>/dev/null || true
 echo -e "${GREEN}[3/4]${NC} Verificando instalações do Apache NetBeans..."
 NBM_FILE="$REPO_DIR/dist/agy-nb-bridge-latest.nbm"
 
+if [ ! -f "$NBM_FILE" ]; then
+    echo -e "  -> Baixando pacote mais recente do GitHub Releases..."
+    mkdir -p "$REPO_DIR/dist"
+    curl -sSL "https://github.com/djonatansantos706/bridge/releases/latest/download/agy-nb-bridge-latest.nbm" -o "$NBM_FILE" 2>/dev/null || true
+fi
+
 if [ -f "$NBM_FILE" ]; then
     TEMP_DIR=$(mktemp -d)
     unzip -q -o "$NBM_FILE" -d "$TEMP_DIR" 2>/dev/null || true

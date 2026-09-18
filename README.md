@@ -45,7 +45,8 @@ Suíte completa de integração bidirecional em tempo real entre o **Apache NetB
 
 ## ⚡ Comandos Padrão para Toda a Equipe (Rápido e sem Maven)
 
-> **Zero Compilação:** O repositório já inclui o pacote `.nbm` pré-compilado em `dist/agy-nb-bridge-latest.nbm`. Não é necessário instalar JDK 17 nem Maven!
+> **Zero Compilação:** O pacote `.nbm` pré-compilado está disponível na pasta `dist/agy-nb-bridge-latest.nbm` e também na aba de [GitHub Releases](https://github.com/djonatansantos706/bridge/releases). Não é necessário instalar JDK 17 nem Maven!
+
 
 ### 📥 1. Comando Padrão para BAIXAR / INSTALAR (Primeira Vez)
 Execute no terminal da máquina:
